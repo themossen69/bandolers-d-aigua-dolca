@@ -1,0 +1,3 @@
+CONFIRMACIONS I ELIMINACIONS
+    - Per veure les comandes disponibles que pots utilitzar durant el joc prem /comandes_disponibles. Utilitza-les intuitivament segons la situació que et trobis.
+    - El bot està automatitzat per a que el joc funcioni amb fluïdesa. En cas de dubtes contactar amb @SheriffDeDosrius a la mateixa app.

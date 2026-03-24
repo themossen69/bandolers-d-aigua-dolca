@@ -1,0 +1,3 @@
+Un bandoler t'ha enxampat!!! És cert?
+Prem /confirmar per confirmar l'enxampament.
+Prem /denegar per denegar l'enxampament.

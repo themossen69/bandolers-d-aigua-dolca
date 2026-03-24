@@ -1,0 +1,20 @@
+Comandes disponibles ADMIN:
+
+/comencar_joc: posa a vius a tots els usuaris + kills a 0, tanca inscripcions i assigna víctimes.
+/comprobar_dades_usuaris : indica quins usuaris no estan ben registrats i si es el cas indica que tots estan ben registrats.
+/tancar_inscripcions : No permet fer mes inscripcions
+/obrir_inscripcions: Obre les inscripcions.
+/estat_bot: bool inscripcions_disponibles i usuaris ben registrats + nº d'usuaris a la bd.
+/restart_db : Deixa la db en blanc.
+/delete_user: Demana un id per eliminar les dades d'aquest de la bd.
+/matar : donat id o sobrenom, matar al jugador (tenir en compte que qui l'hauria d'haver matat se li ha d'assignar una nova víctima)
+/assignar_victimes : de tots els jugadors vius, torna a assignar víctimes (enviar missatge a tots els jugadors del que ha passat)
+/text : envia text al target introduït (bandolers, enxampats, tots els usuaris o usuari en concret)
+/usuaris: mostrar totes les dades de cada jugador.
+/update_user : donat l'id d'un usuari, l'atribut que es vol canviar i per que es vol canviar, fer el canvi de les dades.
+/send_automatic_winning_message : detecta (si existeix) l'usuari amb id = victima i envia el winning_message.
+/send_winning_message_given_id : admin tria id del guanyador i s'envia missatge a tothom.
+/ranquing_bandolers : mostra els bandolers amb més kills.
+/ranquing_nuclis : mostra el nombre de participants que te cada nucli de Dosrius.
+/cementiri : mostra totes les dades dels bandolers eliminats.
+/comandes_disponibles: mostra les comandes que pots utilitzar.

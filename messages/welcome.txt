@@ -1,0 +1,2 @@
+Benvingut a la tercera edició dels bandolers d'aigua dolça de la festa major de Dosrius. Amb aquest bot podràs informar-te i notificar accions importants del joc.
+Prem /regles_del_joc per infomar-te del funcionament d'aquesta activitat!

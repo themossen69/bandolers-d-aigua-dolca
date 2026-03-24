@@ -1,0 +1,9 @@
+El joc ha començat!🔫💦
+
+S'han actualitzat les teves /comandes_disponibles!!!
+    - Prem /victima per veure la teva víctima
+    - Prem /enxampar quan l'hagis ruixat amb aigua
+    - La victima haurà de confirmar la seva mort prement /confirmar o /denegar 
+    ⚠️ IMPORTANT: no juguis amb les comandes, intentem evitar confusions!
+
+Molta sort i que comenci el combat més refrescant!!!

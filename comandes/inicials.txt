@@ -1,0 +1,6 @@
+Comandes disponibles:
+/perfil : mostra les teves dades del joc.
+/editar_perfil: pots editar les dades de la teva incripció. També et pots posar un sobrenom!!!
+/regles_del_joc : explica les regles principals del joc.
+/ranquing_nuclis : mostra el nombre de participants que te cada nucli de Dosrius.
+/comandes_disponibles: mostra les comandes que pots utilitzar.

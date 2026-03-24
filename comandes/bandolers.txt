@@ -1,0 +1,10 @@
+Comandes disponibles BANDOLER:
+/perfil : mostra les teves dades del joc.
+/victima : mostra el nom, descripció i imatge de la teva víctima.
+/actualitzar_sobrenom : comanda per canviar-te el sobrenom (els altres jugadors et coneixeran amb aquest nom). Per defecte no se te'n assigna cap.
+/enxampar : prem aquesta comanda si has atrapat a la teva víctima.
+/ranquing_bandolers : mostra els bandolers amb més kills.
+/ranquing_nuclis : mostra el nombre de participants que te cada nucli de Dosrius.
+/cementiri : mostra els noms o sobrenoms dels bandolers eliminats.
+/regles_del_joc : explica les regles principals del joc.
+/comandes_disponibles: mostra les comandes que pots utilitzar.
