@@ -27,6 +27,7 @@ def create_DB(cursor) -> None:
         kills INTEGER DEFAULT 0,
         victima INTEGER,
         punts INTEGER DEFAULT 0,
+        permis_instagram BOOLEAN DEFAULT 0,
         FOREIGN KEY (victima) REFERENCES bandolers (id) ON DELETE SET NULL
     )
     """)
@@ -97,9 +98,9 @@ def db_worker():
 def create_bandoler(cursor: sqlite3.Cursor, dicc_dades: dict) -> bool:
     try:
         cursor.execute("""
-            INSERT INTO bandolers (id, nom, nucli, descripcio, estat, sobrenom, victima, foto, kills, punts)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (dicc_dades['id'], dicc_dades['nom'], dicc_dades['nucli'], dicc_dades['descripcio'], dicc_dades['estat'], dicc_dades['sobrenom'], dicc_dades['victima'], dicc_dades['foto'], dicc_dades['kills'], dicc_dades['punts']))
+            INSERT INTO bandolers (id, nom, nucli, descripcio, estat, sobrenom, victima, foto, kills, punts, permis_instagram)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (dicc_dades['id'], dicc_dades['nom'], dicc_dades['nucli'], dicc_dades['descripcio'], dicc_dades['estat'], dicc_dades['sobrenom'], dicc_dades['victima'], dicc_dades['foto'], dicc_dades['kills'], dicc_dades['punts'], dicc_dades['permis_instagram']))
         return True
     except (KeyError, sqlite3.Error) as e:
         print(f"Error ####{e}#### al crear un bandoler amb dades: \n{dicc_dades}")

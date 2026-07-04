@@ -133,22 +133,67 @@ def save_photo(dicc_user: dict, message) -> None:
         # Guardar la imatge com un blob a la base de dades
         dicc_user['foto'] = sqlite3.Binary(file_data)
 
-        inscripcio_correcta = f.execute_db(f.create_bandoler, dicc_user)
+        # Acceptar que es tractaran aquestes dades
+        markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
+        markup.add('Accepto', 'No accepto')
+        message = bot.send_message(message.chat.id, f.file_content_2_string(f.get_path_messages("data_protection.txt")), reply_markup=markup)
+        bot.register_next_step_handler(message, lambda m: data_protection(dicc_user, m))
 
-        if not inscripcio_correcta:
-            msg = "No s'ha pogut registrar la inscripció, falten dades. Torna-ho a intentar amb /inscripcio."
-            bot.send_message(message.chat.id, msg)
-            return
-
-        msg = "Inscripció registrada correctament!\n\n"
-        msg += "Per veure el teu perfil prem /perfil.\n"
-        msg += "Per veure les comandes disponibles prem /comandes_disponibles.\n"
-        # msg += "Si vols pots posar-te un sobrenom. Prem /actualitzar_sobrenom per canviar-lo.\n"
-        bot.send_message(message.chat.id, msg)
     else:
         msg = "No has enviat una imatge amb un format correcte. Torna a intentar-ho. \n\nSi veus que no funciona, fes-te una foto des de la càmera de telegram i envia-la."
         bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(message, lambda m: save_photo(dicc_user, m))
+
+def data_protection(dicc_user: dict, message) -> None:
+    # Implementation for data protection logic
+    data_state = message.text
+    if data_state == 'Accepto':
+        # Preguntar pel permís de l'instagram
+        markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
+        markup.add('Accepto', 'No accepto')
+        msg = f.file_content_2_string(f.get_path_messages("instagram_permission.txt"))
+        bot.send_message(message.chat.id, msg, reply_markup=markup)
+        bot.register_next_step_handler(message, lambda m: data_protection(dicc_user, m))
+
+    elif data_state == 'No accepto':
+        msg = "Inscripció cancel·lada. No s'han guardat les teves dades."
+        bot.send_message(message.chat.id, msg)
+
+    else:
+        markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
+        markup.add('Accepto', 'No accepto')
+        msg = "Opció no correcta, torna a intentar-ho. \n\nIMPORTANT: Prem un dels 2 botons (Si no escriu: Accepto o No accepto)."
+        bot.send_message(message.chat.id, msg, reply_markup=markup)
+        bot.register_next_step_handler(message, lambda m: data_protection(dicc_user, m))
+
+def instagram_permission(dicc_user: dict, message) -> None:
+    # Implementation for Instagram permission logic
+    data_state = message.text
+    if data_state == 'Accepto':
+        dicc_user['permis_instagram'] = True
+    elif data_state == 'No accepto':
+        dicc_user['permis_instagram'] = False
+    else:
+        markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
+        markup.add('Accepto', 'No accepto')
+        msg = "Opció no correcta, torna a intentar-ho. \n\nIMPORTANT: Prem un dels 2 botons (Si no escriu: Accepto o No accepto)."
+        bot.send_message(message.chat.id, msg, reply_markup=markup)
+        bot.register_next_step_handler(message, lambda m: instagram_permission(dicc_user, m))
+        return
+
+    inscripcio_correcta = f.execute_db(f.create_bandoler, dicc_user)
+    
+    if not inscripcio_correcta:
+        msg = "No s'ha pogut registrar la inscripció perquè falten dades. Torna-ho a intentar amb /inscripcio."
+        bot.send_message(message.chat.id, msg)
+        return
+
+    msg = "Inscripció registrada correctament!\n\n"
+    msg += "Per veure el teu perfil prem /perfil.\n"
+    msg += "Per veure les comandes disponibles prem /comandes_disponibles.\n"
+    # msg += "Si vols pots posar-te un sobrenom. Prem /actualitzar_sobrenom per canviar-lo.\n"
+    bot.send_message(message.chat.id, msg)
+    
 
 def user_and_victim(cursor: sqlite3.Cursor, id_bandoler: int) -> tuple:
     """
