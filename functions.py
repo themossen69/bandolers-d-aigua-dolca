@@ -1,9 +1,11 @@
+from datetime import date
 import sqlite3
 import io
 import random
 import os
 import queue
 import sys
+import csv
 
 private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private", "constants"))
 if private_path not in sys.path:
@@ -52,6 +54,33 @@ def create_var_DB(cursor) -> None:
     """)
     cursor.execute("""
                    INSERT OR IGNORE INTO variables (nom, valor) VALUES ('guanyador', '0')
+    """)
+
+def create_controls_DB(cursor) -> None:
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS controls (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        inici DATESTAMP,
+        final DATESTAMP
+    )
+    """)
+    with open('dades.csv', 'r', encoding='utf-8') as f:
+        lector_csv = csv.reader(f)
+        next(lector_csv) # Saltar capçalera
+
+        cursor.executemany("INSERT OR REPLACE INTO esdeveniments VALUES (?, ?, ?)", lector_csv)
+
+
+def create_controls_bandolers_DB(cursor) -> None:
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS controls_bandolers (
+        id_control INTEGER,
+        id_bandoler INTEGER,
+        timestamp DATESTAMP,
+        PRIMARY KEY (id_control, id_bandoler),
+        FOREIGN KEY (id_control) REFERENCES controls(id) ON SET NULL,
+        FOREIGN KEY (id_bandoler) REFERENCES bandolers(id) ON SET NULL
+    )
     """)
 
 def restart_db(cursor: sqlite3.Cursor) -> None:
@@ -389,6 +418,11 @@ def get_kills(cursor: sqlite3.Cursor, id: int) -> int:
     kills = cursor.fetchone()
     return kills[0] if kills else 0  # Retorna el nombre de kills o 0 si no hi ha cap kill
 
+def get_points(cursor: sqlite3.Cursor, id: int) -> int:
+    cursor.execute("SELECT punts FROM bandolers WHERE id=?", (id,))
+    points = cursor.fetchone()
+    return points[0] if points else 0  # Retorna el nombre de punts o 0 si no hi ha cap punt
+
 def get_name(cursor: sqlite3.Cursor, id: int) -> str:
     cursor.execute("SELECT nom FROM bandolers WHERE id=?", (id,))
     name = cursor.fetchone()
@@ -420,7 +454,41 @@ def assert_no_bar(str: str) -> bool:
     # assegura que no hi hagi el caracter '/' a la cadena
     return '/' not in str
 
+def date_in_range(date_str: str, inici: str, final: str) -> bool:
+    # Comprova si la data donada està dins del rang especificat
+    try:
+        date_obj = date.fromisoformat(date_str)
+        inici_obj = date.fromisoformat(inici)
+        final_obj = date.fromisoformat(final)
+        return inici_obj <= date_obj <= final_obj
+    except ValueError:
+        return False
 
+def get_control_id_given_date(cursor: sqlite3.Cursor, date_str: str) -> int:
+    cursor.execute("SELECT id FROM controls WHERE inici <= ? AND final >= ?", (date_str, date_str))
+    control = cursor.fetchone()
+    return control[0] if control else None
+
+def is_user_in_control(cursor: sqlite3.Cursor, control_id: int, user_id: int) -> bool:
+    cursor.execute("SELECT * FROM controls_bandolers WHERE id_control=? AND id_bandoler=?", (control_id, user_id))
+    return cursor.fetchone() is not None
+
+def add_user_to_control(cursor: sqlite3.Cursor, control_id: int, user_id: int, timestamp: str) -> None:
+    cursor.execute("INSERT OR IGNORE INTO controls_bandolers (id_control, id_bandoler, timestamp) VALUES (?, ?, ?)", (control_id, user_id, timestamp))
+
+def control_points(id_bandoler: int, timestamp: str) -> int:
+    # Aquesta funció assigna punts segons l'hora del control
+    # si és el primer control del dia, assigna 1 punt
+    # si no, assigna 2 punts
+    control_date = timestamp.split(' ')[0]  # Obtenim només la data
+    conn = sqlite3.connect(get_path_db())
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM controls_bandolers WHERE id_bandoler=? AND timestamp LIKE ?", (id_bandoler, f"{control_date}%"))
+    count = cursor.fetchone()[0]
+    return 1 if count == 1 else 2
+
+def add_points_to_user(cursor: sqlite3.Cursor, user_id: int, points: int) -> None:
+    cursor.execute("UPDATE bandolers SET punts = punts + ? WHERE id=?", (points, user_id))
 
 if __name__ == "__main__":
     # print(file_content_2_string(get_path_comandes('inicials.txt')))

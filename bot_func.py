@@ -2,9 +2,12 @@ import telebot
 import os
 import sqlite3
 import sys
+import datetime
 
 from telebot.types import ReplyKeyboardRemove
 from telebot.types import ReplyKeyboardMarkup
+from telebot.types import InlineKeyboardMarkup
+from telebot.types import InlineKeyboardButton
 
 import functions as f
 
@@ -324,10 +327,12 @@ def enxampar(message):
 
 def updates_confirm(cursor: sqlite3.Cursor, id_bandoler: int, id_victima: int, victima_victima: int) -> str:
     kills = f.get_kills(cursor, id_bandoler)
+    points = f.get_points(cursor, id_bandoler)
     f.update(cursor, 'estat', id_victima, 'mort')
     f.update(cursor, 'victima', id_bandoler, victima_victima)
     f.update(cursor, 'victima', id_victima, 0)
     f.update(cursor, 'kills', id_bandoler, kills + 1)
+    f.update(cursor, 'punts', id_bandoler, points + 1)
 
 @bot.message_handler(commands=['confirmar'])
 def confirm_kill(message) -> None:
@@ -972,3 +977,80 @@ def edit_profile3(message, field):
         case _:
             msg = "Operació cancel·lada."
             bot.send_message(message.chat.id, msg)
+
+@bot.message_handler(commands=['control'])
+def start_control(message) -> None:
+    if not f.execute_db(f.id_in_db, message.from_user.id):
+        bot.send_message(message.chat.id, f.missatge_no_inscrits())
+        return
+
+    if f.execute_db(f.get_state, message.from_user.id) != 'jugant':
+        msg = "No pots passar el control perquè no estàs jugant.\nPrem /comandes_disponibles per veure les comandes que pots utilitzar"
+        bot.send_message(message.chat.id, msg)
+        return
+    
+    data_dict = {}
+
+    data_dict['timestamp'] = datetime.fromtimestamp(message.date)
+    data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
+    data_dict['id_user'] = message.from_user.id
+
+    if data_dict['id_control'] is None:
+        msg = "No hi ha cap control actiu en aquest moment."
+        bot.send_message(message.chat.id, msg)
+        return
+
+    if f.execute_db(f.is_user_in_control, data_dict['id_user'], data_dict['id_control']):
+        msg = "Ja has passat el control."
+        bot.send_message(message.chat.id, msg)
+        return
+
+    else:
+        msg = "Adjunta la foto per poder validar el control."
+        bot.send_message(message.chat.id, msg)
+        bot.register_next_step_handler(message, lambda m: validate_control(m, data_dict))
+
+def validate_control(message, data_dict) -> None:
+    if message.content_type != 'photo':
+        msg = "No has enviat una foto. El control no s'ha validat."
+        bot.send_message(message.chat.id, msg)
+        return
+
+    try:
+        foto_id = message.photo[-1].file_id  # L'últim element té la millor qualitat
+        bandoler = f.execute_db(f.get_user, data_dict['id_user'])
+
+        msg_admin = (
+            f"Nou control a validar ({data_dict['id_control']})!\n\n"
+            f"bandoler: {bandoler[0]} aka {bandoler[1]}\n"
+            f"permís instagram: {bandoler[10]}"
+        )
+        markup = InlineKeyboardMarkup(row_width=2)
+        btn_accept = InlineKeyboardButton("Acceptar", callback_data=f"accept_control_{data_dict['id_user']}_{data_dict['id_control']}_{data_dict['timestamp']}")
+        btn_deny = InlineKeyboardButton("Denegar", callback_data=f"deny_control_{data_dict['id_user']}_{data_dict['id_control']}_{data_dict['timestamp']}")
+        markup.add(btn_accept, btn_deny)
+        bot.send_photo(ADMIN_ID, foto_id, caption=msg_admin, reply_markup=markup)
+
+        bot.send_message(message.chat.id, "Foto enviada correctament. Espera la validació del Sheriff.")
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+# Validació admin dels controls
+@bot.callback_query_handler(func=lambda call: call.data.startswith("accept_control_") or call.data.startswith("deny_control_"))
+def handle_control_validation(call) -> None:
+    action, user_id, control_id, timestamp = call.data.split("_")[0], int(call.data.split("_")[2]), call.data.split("_")[3], call.data.split("_")[4]
+
+    if action == "accept":
+        f.execute_db(f.add_user_to_control, user_id, control_id, timestamp)
+        points = f.execute_db(f.control_points, user_id, timestamp)
+        f.execute_db(f.add_points_to_user, user_id, points)
+        bot.answer_callback_query(call.id, f"Control acceptat.")
+        bot.send_message(user_id, f"El teu control ha estat acceptat pel Sheriff (+{points} punts)!")
+    elif action == "deny":
+        bot.answer_callback_query(call.id, "Control denegat correctament. Escriu a continuació el motiu de la denegació")
+        bot.register_next_step_handler(call.message, lambda m: handle_denied_control(m, user_id))
+
+def handle_denied_control(message, user_id) -> None:
+    reason = message.text
+    bot.send_message(user_id, f"El teu control ha estat denegat pel Sheriff. \nMotiu: {reason}.")
