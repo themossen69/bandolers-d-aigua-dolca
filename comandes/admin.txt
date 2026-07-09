@@ -15,6 +15,5 @@ Comandes disponibles ADMIN:
 /send_automatic_winning_message : detecta (si existeix) l'usuari amb id = victima i envia el winning_message.
 /send_winning_message_given_id : admin tria id del guanyador i s'envia missatge a tothom.
 /ranquing_bandolers : mostra els bandolers amb més kills.
-/ranquing_nuclis : mostra el nombre de participants que te cada nucli de Dosrius.
 /cementiri : mostra totes les dades dels bandolers eliminats.
 /comandes_disponibles: mostra les comandes que pots utilitzar.

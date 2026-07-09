@@ -90,26 +90,31 @@ def check_name(dicc_user: dict, message) -> None:
         return
     dicc_user['nom'] = name
 
-    markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
-    markup.add('Dosrius', 'Canyamars', 'Can Massuet')
-    message = bot.send_message(message.chat.id, "De quin nucli de Dosrius ets? (Prem un dels 3 botons)", reply_markup=markup)
-    bot.register_next_step_handler(message, lambda m: add_nucli(dicc_user, m))
+    # markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
+    # markup.add('Dosrius', 'Canyamars', 'Can Massuet')
+    # message = bot.send_message(message.chat.id, "De quin nucli de Dosrius ets? (Prem un dels 3 botons)", reply_markup=markup)
+    # bot.register_next_step_handler(message, lambda m: add_nucli(dicc_user, m))
+
+    msg = "Introdueix una descripció de tu mateix que inclogui els teus trets físics més característics (perquè els altres bandolers et puguin reconèixer).\n"
+    msg += "Per exemple, pots posar color d'ulls, de cabell, altura, tatuatges, entre d'altres.\n"
+    bot.send_message(message.chat.id, msg)
+    bot.register_next_step_handler(message, lambda m: check_description(dicc_user, m))
 
 
-def add_nucli(dicc_user: dict, message) -> None:
-    nucli = message.text
-    if nucli in ['Dosrius', 'Canyamars', 'Can Massuet']:
-        dicc_user['nucli'] = nucli
-        msg = "Introdueix una descripció de tu mateix que inclogui els teus trets físics més característics (perquè els altres bandolers et puguin reconèixer).\n"
-        #msg += "Per exemple: 'Sóc un bandoler molt perillós que roba a la gent de Canyamars'.\n"
-        bot.send_message(message.chat.id, msg)
-        bot.register_next_step_handler(message, lambda m: check_description(dicc_user, m))
-    else:
-        markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
-        markup.add('Dosrius', 'Canyamars', 'Can Massuet')
-        msg = "No s'ha pogut registrar el nucli. Torna a intentar-ho. \n\nIMPORTANT: Prem un dels 3 botons (Si no escriu: Dosrius, Canyamars o Can Massuet)."
-        bot.send_message(message.chat.id, msg, reply_markup=markup)
-        bot.register_next_step_handler(message, lambda m: add_nucli(dicc_user, m))
+# def add_nucli(dicc_user: dict, message) -> None:
+#     nucli = message.text
+#     if nucli in ['Dosrius', 'Canyamars', 'Can Massuet']:
+#         dicc_user['nucli'] = nucli
+#         msg = "Introdueix una descripció de tu mateix que inclogui els teus trets físics més característics (perquè els altres bandolers et puguin reconèixer).\n"
+#         #msg += "Per exemple: 'Sóc un bandoler molt perillós que roba a la gent de Canyamars'.\n"
+#         bot.send_message(message.chat.id, msg)
+#         bot.register_next_step_handler(message, lambda m: check_description(dicc_user, m))
+#     else:
+#         markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
+#         markup.add('Dosrius', 'Canyamars', 'Can Massuet')
+#         msg = "No s'ha pogut registrar el nucli. Torna a intentar-ho. \n\nIMPORTANT: Prem un dels 3 botons (Si no escriu: Dosrius, Canyamars o Can Massuet)."
+#         bot.send_message(message.chat.id, msg, reply_markup=markup)
+#         bot.register_next_step_handler(message, lambda m: add_nucli(dicc_user, m))
 
 def check_description(dicc_user: dict, message) -> None:
     description = message.text
@@ -204,7 +209,7 @@ def user_and_victim(cursor: sqlite3.Cursor, id_bandoler: int) -> tuple:
     """
     try:
         user = f.get_user(cursor, id_bandoler)
-        victim_id = user[8]  # Victima assignada
+        victim_id = user[f.key2index('victima')]  # Victima assignada
         victim = f.get_user(cursor, victim_id)
         return user, victim
     except Exception as e:
@@ -218,21 +223,21 @@ def show_victim_profile(message):
         if user is None or bandoler is None:
             bot.send_message(message.chat.id, "No s'ha pogut obtenir la informació de l'usuari o la víctima.")
             return
-        if user[5] == 'jugant':
-            # bandoler = f.get_user(user[8])
+        if user[f.key2index('estat')] == 'jugant':
+            # bandoler = f.get_user(user[f.key2index('victima')])
             if bandoler:
-                if bandoler[2] != '':
-                    msg = f"{bandoler[1]} aka {bandoler[2]}\n\n"
+                if bandoler[f.key2index('sobrenom')] != '':
+                    msg = f"{bandoler[f.key2index('nom')]} aka {bandoler[f.key2index('sobrenom')]}\n\n"
                 else:
-                    msg = f"{bandoler[1]}\n\n"
+                    msg = f"{bandoler[f.key2index('nom')]}\n\n"
 
-                msg += bandoler[4] # description
+                msg += bandoler[f.key2index('descripcio')] # description
 
-                f.blob_to_image(bandoler[6], bot, message.chat.id, msg)
+                f.blob_to_image(bandoler[f.key2index('foto')], bot, message.chat.id, msg)
             else:
                 msg = "No tens víctima assignada.\n Contacta amb @SheriffDeDosrius per solucionar-ho."
                 bot.send_message(message.chat.id, msg)
-        elif user[5] == 'pendent':
+        elif user[f.key2index('estat')] == 'pendent':
             msg = "No pots veure el perfil de la teva víctima perquè estàs pendent de confirmar un enxampament.\n"
             msg += "Prem /confirmar per confirmar l'enxampament o /denegar per denegar-lo."
             bot.send_message(message.chat.id, msg)
@@ -250,16 +255,17 @@ def show_profile(message):
         bot.send_message(message.chat.id, f.missatge_no_inscrits())
         return
     user = f.execute_db(f.get_user, message.from_user.id)
-    msg = "Nom: " + user[1] + "\n"
-    msg += "Sobrenom: " + user[2] + "\n"
-    if user[2]=='':
+    msg = "Nom: " + user[f.key2index('nom')] + "\n"
+    msg += "Sobrenom: " + user[f.key2index('sobrenom')] + "\n"
+    if user[f.key2index('sobrenom')]=='':
         msg += "(Per posar-te sobrenom prem /editar_perfil i seguidament prem el botó corresponent.)\n"
-    msg += "Descripció: " + user[4] + "\n"
-    msg += "Nucli: " + user[3] + "\n"
-    msg += "Estat: " + user[5] + "\n"
-    msg += "Kills: " + str(user[7]) + "\n"
+    msg += "Descripció: " + user[f.key2index('descripcio')] + "\n"
+    # msg += "Nucli: " + user[f.key2index('nucli')] + "\n"
+    msg += "Estat: " + user[f.key2index('estat')] + "\n"
+    msg += "Kills: " + str(user[f.key2index('kills')]) + "\n"
+    msg += "Punts: " + str(user[f.key2index('punts')]) + "\n"
 
-    f.blob_to_image(user[6], bot, message.chat.id, msg)
+    f.blob_to_image(user[f.key2index('foto')], bot, message.chat.id, msg)
 
 
 # @bot.message_handler(commands=['actualitzar_sobrenom'])
@@ -405,7 +411,6 @@ def winning_message(id_winner: int) -> None:
     f.execute_db(f.set_winner, id_winner)
     msg_bandoler = "\n\nFELICITATS! Ets l'últim bandoler en joc!"
     msg_bandoler += "\nEl @SheriffDeDosrius es posarà amb contacte amb tu per coordinar la teva recompensa!"
-    msg_bandoler += "\n\nEt posem en estat de mort per conveniència del programa, però no ho dubtis, has guanyat tu!!!"
     msg_bandoler += "\n\nGràcies per participar!"
 
     name_winner = f.execute_db(f.name_or_surname, id_winner)
@@ -419,20 +424,20 @@ def winning_message(id_winner: int) -> None:
 
     bot.send_message(id_winner, msg_bandoler)
 
-    msg_participants = "Anunciem els resultats de la Nyacapada:"
-    msg_participants += f"\n\nEnhorabona {f.execute_db(f.get_nucli, id_winner).upper()}, heu guanyat 4 punts per tenir l'últim bandoler viu!"
-    msg_participants += f"\n\nEnhorabona {f.execute_db(f.ranquing_nuclis)[0][0].upper()}, heu guanyat 4 punts per tenir la màxima participació al joc ({f.execute_db(f.ranquing_nuclis)[0][1]})!"
-    msg_participants += "\n\nGràcies a tothom per participar! Ens veiem l'any que ve!"
-    send_message_to_target('Tots els usuaris', msg_participants)
-    bot.send_message(ADMIN_ID, msg_participants)
+    # msg_participants = "Anunciem els resultats de la Nyacapada:"
+    # msg_participants += f"\n\nEnhorabona {f.execute_db(f.get_nucli, id_winner).upper()}, heu guanyat 4 punts per tenir l'últim bandoler viu!"
+    # msg_participants += f"\n\nEnhorabona {f.execute_db(f.ranquing_nuclis)[0][0].upper()}, heu guanyat 4 punts per tenir la màxima participació al joc ({f.execute_db(f.ranquing_nuclis)[0][1]})!"
+    # msg_participants += "\n\nGràcies a tothom per participar! Ens veiem l'any que ve!"
+    # send_message_to_target('Tots els usuaris', msg_participants)
+    # bot.send_message(ADMIN_ID, msg_participants)
 
-@bot.message_handler(commands=['ranquing_nuclis'])
-def nuclis_rank(message):
-    ranquing = f.execute_db(f.ranquing_nuclis)
-    msg = "Ranquing de participants per nucli:\n\n"
-    for i, nucli in enumerate(ranquing):
-        msg += f"{i+1}. {nucli[0]}: {nucli[1]} participants\n"
-    bot.send_message(message.chat.id, msg)
+# @bot.message_handler(commands=['ranquing_nuclis'])
+# def nuclis_rank(message):
+#     ranquing = f.execute_db(f.ranquing_nuclis)
+#     msg = "Ranquing de participants per nucli:\n\n"
+#     for i, nucli in enumerate(ranquing):
+#         msg += f"{i+1}. {nucli[0]}: {nucli[1]} participants\n"
+#     bot.send_message(message.chat.id, msg)
 
 @bot.message_handler(commands=['ranquing_bandolers'])
 def bandolers_rank(message):
@@ -615,7 +620,7 @@ def update_user(message) -> None:
         user_id = message.text
         if f.execute_db(f.id_in_db, user_id):
             markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
-            markup.add('nom', 'sobrenom', 'descripcio', 'estat', 'nucli', 'victima', 'kills', 'cancelar')
+            markup.add('nom', 'sobrenom', 'descripcio', 'estat', 'victima', 'kills', 'cancelar')
             msg = f"Quin camp vols actualitzar per {user_id}?\n"
             message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)  
             bot.register_next_step_handler(message, lambda m: update_field(m, user_id))
@@ -630,7 +635,7 @@ def update_user(message) -> None:
 def update_field(message, user_id) -> None:
     if f.is_admin(message):
         field = message.text.strip().lower()  # Normalitzar el camp a minúscules
-        if field in ['nom', 'sobrenom', 'descripcio', 'estat', 'nucli', 'victima', 'kills']:
+        if field in ['nom', 'sobrenom', 'descripcio', 'estat', 'victima', 'kills']:
             msg = f"Introdueix el nou valor per al camp {field}:\n"
             bot.send_message(ADMIN_ID, msg)
             bot.register_next_step_handler(message, lambda m: update_value(m, field, user_id))
@@ -651,11 +656,11 @@ def update_value(message, field, user_id) -> None:
                 msg = f"El valor de {field} ha de ser un número enter."
                 bot.send_message(ADMIN_ID, msg)
                 return
-        elif field == 'nucli':
-            if value not in ['Dosrius', 'Canyamars', 'Can Massuet']:
-                msg = "El nucli ha de ser 'Dosrius', 'Canyamars' o 'Can Massuet'."
-                bot.send_message(ADMIN_ID, msg)
-                return
+        # elif field == 'nucli':
+        #     if value not in ['Dosrius', 'Canyamars', 'Can Massuet']:
+        #         msg = "El nucli ha de ser 'Dosrius', 'Canyamars' o 'Can Massuet'."
+        #         bot.send_message(ADMIN_ID, msg)
+        #         return
         elif field == 'estat':
             if value not in ['jugant', 'mort', 'pendent']:
                 msg = "L'estat ha de ser 'jugant', 'mort' o 'pendent'."
@@ -923,14 +928,14 @@ def edit_profile(message):
         return
     msg = "Quin camp vols actualitzar?\n"
     markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
-    markup.add('nom', 'sobrenom', 'descripcio', 'nucli', 'foto', 'cancel·lar')
+    markup.add('nom', 'sobrenom', 'descripcio', 'foto', 'cancel·lar')
     message = bot.send_message(message.chat.id, msg, reply_markup=markup)
     bot.register_next_step_handler(message, edit_profile2)
 
 def edit_profile2(message):
     field = message.text.strip().lower()  # Normalitzar el camp a minúscules
     match field:
-        case 'nom' | 'sobrenom' | 'descripcio' | 'nucli':
+        case 'nom' | 'sobrenom' | 'descripcio':
             msg = f"Introdueix el nou valor per {field}:"
             bot.send_message(message.chat.id, msg)
             bot.register_next_step_handler(message, lambda m: edit_profile3(m, field))
@@ -957,11 +962,11 @@ def edit_profile3(message, field):
             msg = f"Camp {field} actualitzat correctament!\n"
             msg += "Per veure el teu perfil prem /perfil.\n"
             bot.send_message(message.chat.id, msg)
-        case 'nucli':
-            if value not in ['Dosrius', 'Canyamars', 'Can Massuet']:
-                msg = "El nucli ha de ser 'Dosrius', 'Canyamars' o 'Can Massuet'. Operació cancel·lada."
-                bot.send_message(message.chat.id, msg)
-                return
+        # case 'nucli':
+        #     if value not in ['Dosrius', 'Canyamars', 'Can Massuet']:
+        #         msg = "El nucli ha de ser 'Dosrius', 'Canyamars' o 'Can Massuet'. Operació cancel·lada."
+        #         bot.send_message(message.chat.id, msg)
+        #         return
         case 'foto':
             if message.content_type == 'photo':  # Comprova si el missatge conté una foto
                 file_id = message.photo[-1].file_id  # L'últim element té la millor qualitat

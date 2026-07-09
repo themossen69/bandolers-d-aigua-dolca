@@ -18,20 +18,12 @@ QUÈ VAL?
     2. L’únic límit és la bona fe i les ganes de passar-ho bé.
 
 CONTROL DE BANDOLERS
-    Per assegurar que tots els jugadors sou al poble durant la Festa Major, haureu de participar al Control de Bandolers: cada dia hi haurà un repte fotogràfic i haureu d’enviar la vostra foto al perfil de Telegram 👉 @SheriffDeDosrius.
+    Per assegurar que tots els jugadors sou al poble durant la Festa Major, haureu de participar al Control de Bandolers: cada dia hi haurà un repte fotogràfic i haureu d’enviar la vostra foto amb la comanda /control.
 
-    📌 Cal fer com a mínim 2 fotos de les 4 per seguir en joc.
-    ⏰ La foto de diumenge és obligatori enviar-la abans de les 16h.
+    📌 Cal fer com a mínim 1 foto cada dia de la FM per seguir en joc (excepte el primer dia que no és obligatori).
 
     CALENDARI:
-    - Dijous 28/08 → Foto amb el mocador de la Nyacapada 🧣 (es pot aconseguir a les barres de la Comissió de Festes)
-    - Divendres 29/08 → Foto al correfoc 🔥
-    - Dissabte 30/08 → Foto amb els gegants 🤴👸
-    - Diumenge 31/08 → Foto a les sardanes 💃🎶 (abans de les 16h!)
-
-PUNTUACIÓ NYACAPADA:
-    - 4 punts pel nucli de la persona guanyadora!
-    - 4 punts pel nucli amb més participants!
+    TODO
 
 CONFIRMACIONS I ELIMINACIONS
     - Per veure les comandes disponibles que pots utilitzar durant el joc prem /comandes_disponibles. Utilitza-les intuitivament segons la situació que et trobis.

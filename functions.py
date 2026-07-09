@@ -12,6 +12,7 @@ if private_path not in sys.path:
     sys.path.insert(0, private_path)
 
 from constants import ADMIN_ID, DB, QUEUE
+from vars import BANDOLER_FIELD_NAMES
 
 ###### funcions de gestió de la base de dades ######
 
@@ -22,7 +23,6 @@ def create_DB(cursor) -> None:
         id INTEGER PRIMARY KEY,
         nom TEXT NOT NULL,
         sobrenom TEXT,
-        nucli TEXT CHECK (nucli IN ('Dosrius', 'Canyamars', 'Can Massuet', '')),
         descripcio TEXT,
         estat TEXT CHECK (estat IN ('jugant', 'mort', 'pendent')),
         foto BLOB,
@@ -127,9 +127,9 @@ def db_worker():
 def create_bandoler(cursor: sqlite3.Cursor, dicc_dades: dict) -> bool:
     try:
         cursor.execute("""
-            INSERT INTO bandolers (id, nom, nucli, descripcio, estat, sobrenom, victima, foto, kills, punts, permis_instagram)
+            INSERT INTO bandolers (id, nom, descripcio, estat, sobrenom, victima, foto, kills, punts, permis_instagram)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (dicc_dades['id'], dicc_dades['nom'], dicc_dades['nucli'], dicc_dades['descripcio'], dicc_dades['estat'], dicc_dades['sobrenom'], dicc_dades['victima'], dicc_dades['foto'], dicc_dades['kills'], dicc_dades['punts'], dicc_dades['permis_instagram']))
+            """, (dicc_dades['id'], dicc_dades['nom'], dicc_dades['descripcio'], dicc_dades['estat'], dicc_dades['sobrenom'], dicc_dades['victima'], dicc_dades['foto'], dicc_dades['kills'], dicc_dades['punts'], dicc_dades['permis_instagram']))
         return True
     except (KeyError, sqlite3.Error) as e:
         print(f"Error ####{e}#### al crear un bandoler amb dades: \n{dicc_dades}")
@@ -215,10 +215,10 @@ def is_admin(message) -> bool:
     else:
         return False
 
-def ranquing_nuclis(cursor: sqlite3.Cursor):
-    cursor.execute("SELECT nucli, COUNT(*) as participants FROM bandolers GROUP BY nucli ORDER BY participants DESC")
-    ranquing = cursor.fetchall()
-    return list(ranquing)
+# def ranquing_nuclis(cursor: sqlite3.Cursor):
+#     cursor.execute("SELECT nucli, COUNT(*) as participants FROM bandolers GROUP BY nucli ORDER BY participants DESC")
+#     ranquing = cursor.fetchall()
+#     return list(ranquing)
 
 def ranquing_bandolers(cursor: sqlite3.Cursor):
     cursor.execute("SELECT nom, sobrenom, kills FROM bandolers WHERE kills>0 ORDER BY kills DESC LIMIT 10")
@@ -298,15 +298,14 @@ def kill(cursor: sqlite3.Cursor, id_mort: int) -> None:
 def show_user(cursor: sqlite3.Cursor, id: int, bot, id_reciever) -> None:
     user = get_user(cursor, id)
     if user:
-        msg = "ID: " + str(user[0]) + "\n"
-        msg += "Nom: " + user[1] + "\n"
-        msg += "Sobrenom: " + user[2] + "\n"
-        msg += "Nucli: " + user[3] + "\n"
-        msg += "Descripció: " + user[4] + "\n"
-        msg += "Estat: " + user[5] + "\n"
-        msg += "Kills: " + str(user[7]) + "\n"
-        msg += "Victima: " + str(user[8]) + "\n"
-        blob_to_image(user[6], bot, id_reciever, msg)
+        msg = "ID: " + str(user[key2index('id')]) + "\n"
+        msg += "Nom: " + user[key2index('nom')] + "\n"
+        msg += "Sobrenom: " + user[key2index('sobrenom')] + "\n"
+        msg += "Descripció: " + user[key2index('descripcio')] + "\n"
+        msg += "Estat: " + user[key2index('estat')] + "\n"
+        msg += "Kills: " + str(user[key2index('kills')]) + "\n"
+        msg += "Victima: " + str(user[key2index('victima')]) + "\n"
+        blob_to_image(user[key2index('foto')], bot, id_reciever, msg)
     else:
         msg = f"Usuari no trobat (ID: {id})."
         msg_admin = f"Usuari amb ID {id} no trobat per consulta de {id_reciever}. No es pot mostrar informació."
@@ -324,13 +323,13 @@ def comprobar_dades_usuaris(cursor: sqlite3.Cursor, message, bot) -> bool:
         inscripcio_correcta = True
         for user in users:
             user = get_user(cursor, user)  # Obtenir dades de l'usuari
-            if user[1] == '' or user[3] == '' or user[4] == '' or user[6] is None:
+            if user[key2index('nom')] == '' or user[key2index('descripcio')] == '' or user[key2index('foto')] is None:
                 inscripcio_correcta = False
-                msg = f"Usuari {user[0]} no està ben registrat. Falta informació."
+                msg = f"Usuari {user[key2index('id')]} no està ben registrat. Falta informació."
                 bot.send_message(ADMIN_ID, msg)
                 msg_usuari = f"Hola estimat jugador! Sembla que la teva inscripció no està completa. Si us plau, torna a registrar-te si ho desitges enviant /inscripcio."
-                delete_user_from_db(cursor, user[0])  # Eliminar usuari de la base de dades
-                bot.send_message(user[0], msg_usuari)
+                delete_user_from_db(cursor, user[key2index('id')])  # Eliminar usuari de la base de dades
+                bot.send_message(user[key2index('id')], msg_usuari)
         
         return inscripcio_correcta
 
@@ -408,10 +407,10 @@ def get_picture(cursor: sqlite3.Cursor, id: int) -> bytes:
     picture = cursor.fetchone()
     return picture[0] if picture else None  # Retorna la imatge o None si no hi ha cap imatge
 
-def get_nucli(cursor: sqlite3.Cursor, id: int) -> str:
-    cursor.execute("SELECT nucli FROM bandolers WHERE id=?", (id,))
-    nucli = cursor.fetchone()
-    return nucli[0] if nucli else None  # Retorna el nucli o None si no hi ha cap nucli
+# def get_nucli(cursor: sqlite3.Cursor, id: int) -> str:
+#     cursor.execute("SELECT nucli FROM bandolers WHERE id=?", (id,))
+#     nucli = cursor.fetchone()
+#     return nucli[0] if nucli else None  # Retorna el nucli o None si no hi ha cap nucli
 
 def get_kills(cursor: sqlite3.Cursor, id: int) -> int:
     cursor.execute("SELECT kills FROM bandolers WHERE id=?", (id,))
@@ -489,6 +488,16 @@ def control_points(id_bandoler: int, timestamp: str) -> int:
 
 def add_points_to_user(cursor: sqlite3.Cursor, user_id: int, points: int) -> None:
     cursor.execute("UPDATE bandolers SET punts = punts + ? WHERE id=?", (points, user_id))
+
+def index2key(index: int) -> str:
+    return BANDOLER_FIELD_NAMES[index] if index in BANDOLER_FIELD_NAMES else None
+
+def key2index(key: str) -> int:
+    for index, field_name in BANDOLER_FIELD_NAMES.items():
+        if field_name == key:
+            return index
+    return None 
+    
 
 if __name__ == "__main__":
     # print(file_content_2_string(get_path_comandes('inicials.txt')))
