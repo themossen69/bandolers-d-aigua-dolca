@@ -7,7 +7,7 @@ import queue
 import sys
 import csv
 
-private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private", "constants"))
+private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private"))
 if private_path not in sys.path:
     sys.path.insert(0, private_path)
 
@@ -380,7 +380,7 @@ def is_pending(cursor: sqlite3.Cursor, id: int) -> bool:
     return estat[0] == 'pendent' if estat else False
 
 def missatge_no_inscrits() -> str:
-    global inscripcio_disponible
+    inscripcio_disponible = execute_db(get_inscripcio_disponible)
     if inscripcio_disponible:
         msg = "No estàs registrat com a bandoler. \nPer registrar-te prem /inscripcio."
     else:

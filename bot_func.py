@@ -11,7 +11,7 @@ from telebot.types import InlineKeyboardButton
 
 import functions as f
 
-private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private", "constants"))
+private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private"))
 if private_path not in sys.path:
     sys.path.insert(0, private_path)
 from constants import TOKEN, ADMIN_ID
