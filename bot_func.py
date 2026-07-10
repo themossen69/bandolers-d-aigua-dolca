@@ -1002,7 +1002,7 @@ def start_control(message) -> None:
     
     data_dict = {}
 
-    data_dict['timestamp'] = datetime.fromtimestamp(message.date, tz=timezone.utc)
+    data_dict['timestamp'] = datetime.fromtimestamp(message.date)
     data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
     data_dict['id_user'] = message.from_user.id
 
