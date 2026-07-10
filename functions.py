@@ -57,24 +57,24 @@ def create_var_DB(cursor) -> None:
     """)
 
 def create_controls_DB(cursor, csv_file: str) -> None:
+    cursor.execute("DROP TABLE IF EXISTS controls")
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS controls (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        inici DATESTAMP,
-        final DATESTAMP
-    )
-    """)
+        CREATE TABLE IF NOT EXISTS controls (
+            id TEXT PRIMARY KEY,
+            inici DATESTAMP,
+            final DATESTAMP
+        )
+        """)
     with open(csv_file, 'r', encoding='utf-8') as f:
         lector_csv = csv.reader(f)
         next(lector_csv) # Saltar capçalera
-
         cursor.executemany("INSERT OR REPLACE INTO controls VALUES (?, ?, ?)", lector_csv)
 
 
 def create_controls_bandolers_DB(cursor) -> None:
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS controls_bandolers (
-        id_control INTEGER,
+        id_control TEXT,
         id_bandoler INTEGER,
         timestamp DATESTAMP,
         PRIMARY KEY (id_control, id_bandoler),
