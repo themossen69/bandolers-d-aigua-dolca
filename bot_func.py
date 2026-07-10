@@ -2,7 +2,8 @@ import telebot
 import os
 import sqlite3
 import sys
-import datetime
+
+from datetime import datetime, timezone
 
 from telebot.types import ReplyKeyboardRemove
 from telebot.types import ReplyKeyboardMarkup
@@ -1001,7 +1002,7 @@ def start_control(message) -> None:
     
     data_dict = {}
 
-    data_dict['timestamp'] = datetime.fromtimestamp(message.date)
+    data_dict['timestamp'] = datetime.fromtimestamp(message.date, tz=timezone.utc)
     data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
     data_dict['id_user'] = message.from_user.id
 
