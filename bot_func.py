@@ -1005,9 +1005,6 @@ def start_control(message) -> None:
 
     timezone = ZoneInfo("Europe/Madrid")
     data_dict['timestamp'] = datetime.fromtimestamp(message.date, tz=timezone)
-    print(f"Control: {data_dict['id_control']}")
-    print(f"Timestamp: {data_dict['timestamp']}")
-    data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
     data_dict['id_user'] = message.from_user.id
 
     if data_dict['id_control'] is None:
@@ -1021,6 +1018,10 @@ def start_control(message) -> None:
         return
 
     else:
+        print(f"Control: {data_dict['id_control']}")
+        print(f"Timestamp: {data_dict['timestamp']}")
+        data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
+        
         msg = "Adjunta la foto per poder validar el control."
         bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(message, lambda m: validate_control(m, data_dict))
