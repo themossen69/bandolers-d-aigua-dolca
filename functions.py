@@ -127,9 +127,9 @@ def db_worker():
 def create_bandoler(cursor: sqlite3.Cursor, dicc_dades: dict) -> bool:
     try:
         cursor.execute("""
-            INSERT INTO bandolers (id, nom, descripcio, estat, sobrenom, victima, foto, kills, punts, permis_instagram)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (dicc_dades['id'], dicc_dades['nom'], dicc_dades['descripcio'], dicc_dades['estat'], dicc_dades['sobrenom'], dicc_dades['victima'], dicc_dades['foto'], dicc_dades['kills'], dicc_dades['punts'], dicc_dades['permis_instagram']))
+            INSERT INTO bandolers (id, nom, sobrenom, descripcio, estat, foto, kills, victima, punts, permis_instagram)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (dicc_dades['id'], dicc_dades['nom'], dicc_dades['sobrenom'], dicc_dades['descripcio'], dicc_dades['estat'], dicc_dades['foto'], dicc_dades['kills'], dicc_dades['victima'], dicc_dades['punts'], dicc_dades['permis_instagram']))
         return True
     except (KeyError, sqlite3.Error) as e:
         print(f"Error ####{e}#### al crear un bandoler amb dades: \n{dicc_dades}")
