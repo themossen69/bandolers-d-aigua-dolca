@@ -1,3 +1,4 @@
 #TODO
 Accepto a que s'utilitzin les imatges dels controls de bandolers per fins informatius al perfil d'instagram del joc @bandolersdaiguadolca (opcional).
 Les imatges es penjarien a les històries amb la cara del bandoler tapada per no revelar la vostra identitat als altres jugadors.
+Donat el cas que guanyis el joc, es penjarà la teva imatge de l'inscripció o la d'algun control (aquest cop sense tapar la cara).

@@ -161,7 +161,7 @@ def data_protection(dicc_user: dict, message) -> None:
         markup.add('Accepto', 'No accepto')
         msg = f.file_content_2_string(f.get_path_messages("instagram_permission.txt"))
         bot.send_message(message.chat.id, msg, reply_markup=markup)
-        bot.register_next_step_handler(message, lambda m: data_protection(dicc_user, m))
+        bot.register_next_step_handler(message, lambda m: instagram_permission(dicc_user, m))
 
     elif data_state == 'No accepto':
         msg = "Inscripció cancel·lada. No s'han guardat les teves dades."
@@ -819,8 +819,7 @@ def show_users(message) -> None:
 @bot.message_handler(commands=['regles_del_joc'])
 def regles_del_joc(message) -> None:
     msg = f.file_content_2_string(f.get_path_messages("game_rules.txt"))
-    bot.send_message(message.chat.id, msg)
-
+    bot.send_message(message.chat.id, msg, parse_mode='Markdown')
 
 @bot.message_handler(commands=['delete_user'])
 def delete_user(message) -> None:

@@ -21,7 +21,7 @@ QUÈ VAL?
 PUNTS
     Els punts serveixen en cas d'empat al final del joc (cas que queda més d'un bandoler viu).
     Com guanyar punts?
-        - Enxampant bandolers: +5 punts per cada kill.
+        - Enxampant bandolers: +5 punts per cada _kill_.
         - Fent Controls de Bandolers: +1 punt pel primer control del dia i +2 punts per cada control extra (d'aquell mateix dia).
 
 CONTROL DE BANDOLERS
@@ -32,25 +32,25 @@ CONTROL DE BANDOLERS
 
     CALENDARI:
 
-    **Dijous 27**
-    - Inici de la FM: foto pel poble (des que comença el joc fins les 23:59h)
-    ❗Aquest control no és obligatori, però si el fas suma punts.
+        **Dijous 27**
+        - Inici de la FM: foto pel poble (des que comença el joc fins les 23:59h)
+        ❗Aquest control no és obligatori, però si el fas suma punts.
 
-    **Divendres 28**
-    - gimcana 4p: foto a la gimcana (11:30 - 13:30)
-    - correfoc: foto al correfoc (22:00 - 23:30)
-    - nit de festa: foto al concert (23:30 - 3:00 del dia següent)
+        **Divendres 28**
+        - gimcana 4p: foto a la gimcana (11:30 - 13:30)
+        - correfoc: foto al correfoc (22:00 - 23:30)
+        - nit de festa: foto al concert (23:30 - 3:00 del dia següent)
 
-    **Dissabte 29**
-    - matinades: foto amb els músics o gegants (7:00 - 9:00)
-    - cursa: foto amb el dorsal o en algun punt d'avituallament (9:00 - 11:00)
-    - hloi party: foto al holi o a la ruixada (12:00 - 13:30)
-    - gegants: foto amb els gegants (17:30 - 19:30)
-    - havaneres: foto a les havaneres (22:00 - 23:59)
+        **Dissabte 29**
+        - matinades: foto amb els músics o gegants (7:00 - 9:00)
+        - cursa: foto amb el dorsal o en algun punt d'avituallament (9:00 - 11:00)
+        - hloi party: foto al holi o a la ruixada (12:00 - 13:30)
+        - gegants: foto amb els gegants (17:30 - 19:30)
+        - havaneres: foto a les havaneres (22:00 - 23:59)
 
-    **Diumenge 30**
-    - sardanes: foto a les sardanes (12:00 - 13:30)
-    - inflables: foto als inflables o amb la xocolata (17:00 - 19:00)
+        **Diumenge 30**
+        - sardanes: foto a les sardanes (12:00 - 13:30)
+        - inflables: foto als inflables o amb la xocolata (17:00 - 19:00)
 
 CONFIRMACIONS I ELIMINACIONS
     - Per veure les comandes disponibles que pots utilitzar durant el joc prem /comandes_disponibles. Utilitza-les intuitivament segons la situació que et trobis.
