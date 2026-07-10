@@ -819,7 +819,7 @@ def show_users(message) -> None:
 @bot.message_handler(commands=['regles_del_joc'])
 def regles_del_joc(message) -> None:
     msg = f.file_content_2_string(f.get_path_messages("game_rules.txt"))
-    bot.send_message(message.chat.id, msg, parse_mode='Markdown')
+    bot.send_message(message.chat.id, msg, parse_mode='HTML')
 
 @bot.message_handler(commands=['delete_user'])
 def delete_user(message) -> None:

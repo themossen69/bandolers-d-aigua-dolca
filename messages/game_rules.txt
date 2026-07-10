@@ -1,57 +1,57 @@
-🎯 Els bandolers d'aigua dolça – Festa Major de Dosrius 2025 💦
+🎯 <b>Els bandolers d'aigua dolça – Festa Major de Dosrius 2025</b> 💦
 
 Tens bona punteria? Et mous com un ninja pels carrers del poble? Doncs aquest és el teu joc!
 
-COM FUNCIONA?
+<b>COM FUNCIONA?</b>
     1. Tothom qui vulgui jugar s’apunta amb la comanda /inscripcio i rebrà el nom d’una víctima assignada al començament de la Festa Major (27/08 a les 21h aproximadament). No ho diguis a ningú! És confidencial!
-    2. Durant els dies de Festa Major, has de localitzar la teva víctima pel carrer i ruixar-la amb aigua: pot ser amb una pistola d’aigua o una xeringa (sense agulla esclar)!
+    2. Durant os dies de Festa Major, has de localitzar la teva víctima pel carrer i ruixar-la amb aigua: pot ser amb una pistola d’aigua o una xeringa (sense agulla esclar)!
     3. Quan ruixis la teva víctima, queda eliminada del joc. I tu heretaràs la seva víctima — l’objectiu és ser l’últim bandoler viu!
     4. En el cas que quedi més d'un bandoler viu, guanyarà el bandoler amb més punts (explicats més endevant).
     5. Mínim hauras d’assistir a 1 dels diversos Controls de Bandolers per dia (explicats més endevant).
 
-QUÈ NO VAL?
+<b>QUÈ NO VAL?</b>
     1. Cubells d’aigua, mangueres o coses massa bèsties. La idea és fer riure, no deixar la gent xopa com si vingués d’una dutxa, per tant, només es permeten pistoles d'aigua i xeringues.
     2. No val ruixar a dins de locals, cases, cotxes, escenaris ni espais tancats. Sempre a l’exterior i amb respecte.
     3. No val enxampar a persones que estiguin organitzant actes, de la mateixa manera que ells no et poden enxampar durant l’organització d’aquests.
 
-QUÈ VAL?
-    1. Sigues creatiu! Pots  dissimular l’atac, preparar emboscades, disfressar-te...
+<b>QUÈ VAL?</b>
+    1. Sigues creatiu! Pots dissimular l’atac, preparar emboscades, disfressar-te...
     2. L’únic límit és la bona fe i les ganes de passar-ho bé.
 
-PUNTS
+<b>PUNTS</b>
     Els punts serveixen en cas d'empat al final del joc (cas que queda més d'un bandoler viu).
     Com guanyar punts?
-        - Enxampant bandolers: +5 punts per cada _kill_.
+        - Enxampant bandolers: +5 punts per cada <i>kill</i>.
         - Fent Controls de Bandolers: +1 punt pel primer control del dia i +2 punts per cada control extra (d'aquell mateix dia).
 
-CONTROL DE BANDOLERS
+<b>CONTROL DE BANDOLERS</b>
     Per assegurar que tots els jugadors sou al poble durant la Festa Major, haureu de participar al Control de Bandolers: cada dia hi haurà diverssos reptes fotogràfics i haureu d’enviar la vostra fotodins l'horari establert amb la comanda /control (disponible al començar el joc).
     En aquestes fotos és necessari que es vegi clarament que sou vosaltres i la zona que especifica aquell control.
 
     📌 Cal fer com a mínim 1 foto CADA DIA de la FM per seguir en joc (excepte el primer dia que no és obligatori).
 
-    CALENDARI:
+    <b>CALENDARI:</b>
 
-        **Dijous 27**
+        <b>Dijous 27</b>
         - Inici de la FM: foto pel poble (des que comença el joc fins les 23:59h)
         ❗Aquest control no és obligatori, però si el fas suma punts.
 
-        **Divendres 28**
+        <b>Divendres 28</b>
         - gimcana 4p: foto a la gimcana (11:30 - 13:30)
         - correfoc: foto al correfoc (22:00 - 23:30)
         - nit de festa: foto al concert (23:30 - 3:00 del dia següent)
 
-        **Dissabte 29**
+        <b>Dissabte 29</b>
         - matinades: foto amb els músics o gegants (7:00 - 9:00)
         - cursa: foto amb el dorsal o en algun punt d'avituallament (9:00 - 11:00)
         - hloi party: foto al holi o a la ruixada (12:00 - 13:30)
         - gegants: foto amb els gegants (17:30 - 19:30)
         - havaneres: foto a les havaneres (22:00 - 23:59)
 
-        **Diumenge 30**
+        <b>Diumenge 30</b>
         - sardanes: foto a les sardanes (12:00 - 13:30)
         - inflables: foto als inflables o amb la xocolata (17:00 - 19:00)
 
-CONFIRMACIONS I ELIMINACIONS
+<b>CONFIRMACIONS I ELIMINACIONS</b>
     - Per veure les comandes disponibles que pots utilitzar durant el joc prem /comandes_disponibles. Utilitza-les intuitivament segons la situació que et trobis.
     - El bot està automatitzat per a que el joc funcioni amb fluïdesa. En cas de dubtes contactar amb @SheriffDeDosrius a la mateixa app.
