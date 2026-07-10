@@ -56,7 +56,7 @@ def create_var_DB(cursor) -> None:
                    INSERT OR IGNORE INTO variables (nom, valor) VALUES ('guanyador', '0')
     """)
 
-def create_controls_DB(cursor) -> None:
+def create_controls_DB(cursor, csv_file: str) -> None:
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS controls (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +64,7 @@ def create_controls_DB(cursor) -> None:
         final DATESTAMP
     )
     """)
-    with open('dades.csv', 'r', encoding='utf-8') as f:
+    with open(csv_file, 'r', encoding='utf-8') as f:
         lector_csv = csv.reader(f)
         next(lector_csv) # Saltar capçalera
 

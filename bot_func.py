@@ -64,7 +64,6 @@ def registration(message) -> None:
             bot.send_message(message.chat.id, msg)
         else:
             if message.from_user.id != ADMIN_ID:
-                print("Begin inscripcio combined")
                 dicc_user = dict()
                 dicc_user['id'] = message.from_user.id
                 dicc_user['kills'] = 0 
@@ -76,7 +75,6 @@ def registration(message) -> None:
                 msg = "Introdueix per teclat nom i cognoms:\n"
                 bot.send_message(message.chat.id, msg)
                 bot.register_next_step_handler(message, lambda m: check_name(dicc_user, m))
-                print("End inscripcio combined")
             else:
                 msg = "No et pots registrar com a bandoler, ets l'administrador del bot."
                 bot.send_message(message.chat.id, msg)
@@ -978,6 +976,9 @@ def edit_profile3(message, field):
                 msg = "Foto actualitzada correctament!\n"
                 msg += "Per veure el teu perfil prem /perfil.\n"
                 bot.send_message(message.chat.id, msg)
+            else:
+                msg = "Format incorrecte. Operació cancel·lada."
+                bot.send_message(message.chat.id, msg)
         case _:
             msg = "Operació cancel·lada."
             bot.send_message(message.chat.id, msg)
@@ -986,6 +987,11 @@ def edit_profile3(message, field):
 def start_control(message) -> None:
     if not f.execute_db(f.id_in_db, message.from_user.id):
         bot.send_message(message.chat.id, f.missatge_no_inscrits())
+        return
+
+    if f.execute_db(f.get_inscripcio_disponible):
+        msg = "No pots passar el control perquè el joc encara no ha començat.\nPrem /comandes_disponibles per veure les comandes que pots utilitzar"
+        bot.send_message(message.chat.id, msg)
         return
 
     if f.execute_db(f.get_state, message.from_user.id) != 'jugant':
