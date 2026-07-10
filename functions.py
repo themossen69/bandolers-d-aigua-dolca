@@ -68,7 +68,7 @@ def create_controls_DB(cursor, csv_file: str) -> None:
         lector_csv = csv.reader(f)
         next(lector_csv) # Saltar capçalera
 
-        cursor.executemany("INSERT OR REPLACE INTO esdeveniments VALUES (?, ?, ?)", lector_csv)
+        cursor.executemany("INSERT OR REPLACE INTO controls VALUES (?, ?, ?)", lector_csv)
 
 
 def create_controls_bandolers_DB(cursor) -> None:
