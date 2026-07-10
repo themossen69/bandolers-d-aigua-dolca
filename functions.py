@@ -78,8 +78,8 @@ def create_controls_bandolers_DB(cursor) -> None:
         id_bandoler INTEGER,
         timestamp DATESTAMP,
         PRIMARY KEY (id_control, id_bandoler),
-        FOREIGN KEY (id_control) REFERENCES controls(id) ON SET NULL,
-        FOREIGN KEY (id_bandoler) REFERENCES bandolers(id) ON SET NULL
+        FOREIGN KEY (id_control) REFERENCES controls(id) ON DELETE SET NULL,
+        FOREIGN KEY (id_bandoler) REFERENCES bandolers(id) ON DELETE SET NULL
     )
     """)
 
