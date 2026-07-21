@@ -12,7 +12,7 @@ if private_path not in sys.path:
     sys.path.insert(0, private_path)
 
 from constants import ADMIN_ID, DB, QUEUE
-from vars import BANDOLER_FIELD_NAMES
+from const import BANDOLER_FIELD_NAMES
 
 ###### funcions de gestió de la base de dades ######
 
@@ -61,22 +61,26 @@ def create_controls_DB(cursor, csv_file: str) -> None:
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS controls (
             id TEXT PRIMARY KEY,
-            inici DATESTAMP,
-            final DATESTAMP
+            inici TEXT,
+            final TEXT,
+            dia integer
         )
         """)
     with open(csv_file, 'r', encoding='utf-8') as f:
         lector_csv = csv.reader(f)
-        next(lector_csv) # Saltar capçalera
-        cursor.executemany("INSERT OR REPLACE INTO controls VALUES (?, ?, ?)", lector_csv)
-
+        for i, row in enumerate(lector_csv):
+            if i == 0:
+                continue  # Saltar capçalera
+            control_id, inici, final = row
+            dia, _, _, _, _, _ = data_strip(inici)
+            cursor.execute("INSERT OR IGNORE INTO controls (id, inici, final, dia) VALUES (?, ?, ?, ?)", (control_id, inici, final, dia))
 
 def create_controls_bandolers_DB(cursor) -> None:
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS controls_bandolers (
         id_control TEXT,
         id_bandoler INTEGER,
-        timestamp DATESTAMP,
+        timestamp TEXT,
         PRIMARY KEY (id_control, id_bandoler),
         FOREIGN KEY (id_control) REFERENCES controls(id) ON DELETE SET NULL,
         FOREIGN KEY (id_bandoler) REFERENCES bandolers(id) ON DELETE SET NULL
@@ -447,7 +451,10 @@ def n_bandolers(cursor: sqlite3.Cursor) -> int:
 def get_winner_from_var(cursor: sqlite3.Cursor) -> int:
     cursor.execute("SELECT valor FROM variables WHERE nom='guanyador'")
     winner = cursor.fetchone()
-    return int(winner[0]) if winner and winner[0] != '0' else None
+    if winner and winner[0] != '0':
+        return int(winner[0])
+    else:
+        return None
 
 def assert_no_bar(str: str) -> bool:
     # assegura que no hi hagi el caracter '/' a la cadena
@@ -475,19 +482,19 @@ def is_user_in_control(cursor: sqlite3.Cursor, control_id: int, user_id: int) ->
 def add_user_to_control(cursor: sqlite3.Cursor, control_id: int, user_id: int, timestamp: str) -> None:
     cursor.execute("INSERT OR IGNORE INTO controls_bandolers (id_control, id_bandoler, timestamp) VALUES (?, ?, ?)", (control_id, user_id, timestamp))
 
-def control_points(id_bandoler: int, timestamp: str) -> int:
+def control_points(cursor: sqlite3.Cursor, id_bandoler: int, timestamp: str) -> int:
     # Aquesta funció assigna punts segons l'hora del control
     # si és el primer control del dia, assigna 1 punt
     # si no, assigna 2 punts
-    control_date = timestamp.split(' ')[0]  # Obtenim només la data
-    conn = sqlite3.connect(get_path_db())
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM controls_bandolers WHERE id_bandoler=? AND timestamp LIKE ?", (id_bandoler, f"{control_date}%"))
-    count = cursor.fetchone()[0]
-    return 1 if count == 1 else 2
+    control_id = get_control_id_given_date(cursor, timestamp)
+    cursor.execute("SELECT dia FROM controls WHERE id=?", (control_id,))
+    control_day = cursor.fetchone()[0]
 
-def add_points_to_user(cursor: sqlite3.Cursor, user_id: int, points: int) -> None:
-    cursor.execute("UPDATE bandolers SET punts = punts + ? WHERE id=?", (points, user_id))
+    cursor.execute("SELECT count(*) FROM controls_bandolers WHERE id_bandoler=? AND id_control IN (SELECT id FROM controls WHERE dia=?)", (id_bandoler, control_day))
+    count = cursor.fetchone()[0]
+
+    print(f"Bandoler {id_bandoler} ha realitzat {count} controls el dia {control_day}.")
+    return 1 if count == 1 else 2
 
 def index2key(index: int) -> str:
     return BANDOLER_FIELD_NAMES[index] if index in BANDOLER_FIELD_NAMES else None
@@ -497,7 +504,54 @@ def key2index(key: str) -> int:
         if field_name == key:
             return index
     return None 
+
+def get_all_controls(cursor: sqlite3.Cursor) -> list:
+    cursor.execute("SELECT * FROM controls")
+    controls = cursor.fetchall()
+    return [list(control) for control in controls]  # Retorna una llista de llistes amb tots els controls
+
+def get_next_control(cursor: sqlite3.Cursor, current_timestamp: str) -> list:
+    cursor.execute("SELECT * FROM controls WHERE inici > ? ORDER BY inici ASC LIMIT 1", (current_timestamp,))
+    next_control = cursor.fetchone()
+    return list(next_control) if next_control else None  # Retorna el proper control o None si no hi ha cap
+
+def data_strip(data: str) -> tuple:
+    # Retorna dia, mes, any, hora i minuts per separat
+    date_part, time_part = data.split(' ')
+    year, month, day = date_part.split('-')
+    hour, minute, second = time_part.split(':')
+    return day, month, year, hour, minute, second
+
+
+def next_control_message(inici: str, final: str) -> str:
+    inici_day, inici_month, inici_year, inici_hour, inici_minute, _ = data_strip(inici)
+    final_day, final_month, final_year, final_hour, final_minute, _ = data_strip(final)
     
+    if inici_day == final_day and inici_month == final_month and inici_year == final_year:
+        return f"El proper control serà el dia {inici_day}/{inici_month}/{inici_year} de {inici_hour}:{inici_minute} fins a les {final_hour}:{final_minute}."
+    else:
+        return f"El proper control serà del dia {inici_day}/{inici_month}/{inici_year} a les {inici_hour}:{inici_minute} fins al dia {final_day}/{final_month}/{final_year} a les {final_hour}:{final_minute}."
+
+def get_completed_controls(cursor: sqlite3.Cursor) -> list:
+    # Retorna una llista de tuples amb els controls completats, ordenats per persona i data (0: id_bandoler, 1: id_control, 2: timestamp)
+    cursor.execute("""
+        SELECT cb.id_bandoler, cb.id_control, cb.timestamp
+        FROM controls_bandolers cb
+        ORDER BY cb.id_bandoler, cb.timestamp
+    """)
+    completed_controls = cursor.fetchall()
+    _list = [list(control) for control in completed_controls]
+    return _list
+
+def get_user_controls(cursor: sqlite3.Cursor, user_id: int) -> list:
+    cursor.execute("""
+        SELECT cb.id_control, cb.id_bandoler, cb.timestamp
+        FROM controls_bandolers as cb
+        WHERE cb.id_bandoler = ?
+    """, (user_id,))
+    user_controls = cursor.fetchall()
+    return [list(control) for control in user_controls]
+
 
 if __name__ == "__main__":
     # print(file_content_2_string(get_path_comandes('inicials.txt')))

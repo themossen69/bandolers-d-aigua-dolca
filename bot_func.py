@@ -257,7 +257,7 @@ def show_profile(message):
     user = f.execute_db(f.get_user, message.from_user.id)
     msg = "Nom: " + user[f.key2index('nom')] + "\n"
     msg += "Sobrenom: " + user[f.key2index('sobrenom')] + "\n"
-    if user[f.key2index('sobrenom')]=='':
+    if f.execute_db(f.get_inscripcio_disponible) and user[f.key2index('sobrenom')] == '':
         msg += "(Per posar-te sobrenom prem /editar_perfil i seguidament prem el botó corresponent.)\n"
     msg += "Descripció: " + user[f.key2index('descripcio')] + "\n"
     # msg += "Nucli: " + user[f.key2index('nucli')] + "\n"
@@ -1004,24 +1004,34 @@ def start_control(message) -> None:
     data_dict = {}
 
     timezone = ZoneInfo("Europe/Madrid")
-    data_dict['timestamp'] = datetime.fromtimestamp(message.date, tz=timezone)
+    data_dict['timestamp'] = datetime.fromtimestamp(message.date, tz=timezone).strftime("%Y-%m-%d %H:%M:%S")
     data_dict['id_user'] = message.from_user.id
+    data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
+    print(f"Control: {data_dict['id_control']}")
+    print(f"Timestamp: {data_dict['timestamp']}")
+    
 
     if data_dict['id_control'] is None:
-        msg = "No hi ha cap control actiu en aquest moment."
+        msg = "No hi ha cap control actiu en aquest moment.\n"
+        next_control = f.execute_db(f.get_next_control, data_dict['timestamp'])
+        if next_control:
+            msg += f.next_control_message(next_control[1], next_control[2])
+            msg += "\nMés informació sobre els controls a /info_controls."
+        else:
+            msg += "No hi ha cap control més programat."
         bot.send_message(message.chat.id, msg)
         return
 
-    if f.execute_db(f.is_user_in_control, data_dict['id_user'], data_dict['id_control']):
-        msg = "Ja has passat el control."
+    if f.execute_db(f.is_user_in_control, data_dict['id_control'], data_dict['id_user']):
+        msg = "Ja has passat el control assignat a aquesta data."
+        next_control = f.execute_db(f.get_next_control, data_dict['timestamp'])
+        if next_control:
+            msg += "\n" + f.next_control_message(next_control[1], next_control[2])
+            msg += "\nMés informació sobre els controls a /info_controls."
         bot.send_message(message.chat.id, msg)
         return
 
     else:
-        print(f"Control: {data_dict['id_control']}")
-        print(f"Timestamp: {data_dict['timestamp']}")
-        data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
-        
         msg = "Adjunta la foto per poder validar el control."
         bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(message, lambda m: validate_control(m, data_dict))
@@ -1038,9 +1048,13 @@ def validate_control(message, data_dict) -> None:
 
         msg_admin = (
             f"Nou control a validar ({data_dict['id_control']})!\n\n"
-            f"bandoler: {bandoler[0]} aka {bandoler[1]}\n"
-            f"permís instagram: {bandoler[10]}"
+            f"bandoler: {bandoler[1]} aka {bandoler[2]} ({bandoler[0]})\n"
+            f"permís instagram: {bandoler[f.key2index('permis_instagram')]}\n"
         )
+        controls = f.execute_db(f.get_user_controls, data_dict['id_user'])
+        msg_admin += f"Controls realitzats:\n"
+        for control in controls:
+            msg_admin += f"Control {control[0]}: {control[2]}\n"
         markup = InlineKeyboardMarkup(row_width=2)
         btn_accept = InlineKeyboardButton("Acceptar", callback_data=f"accept_control_{data_dict['id_user']}_{data_dict['id_control']}_{data_dict['timestamp']}")
         btn_deny = InlineKeyboardButton("Denegar", callback_data=f"deny_control_{data_dict['id_user']}_{data_dict['id_control']}_{data_dict['timestamp']}")
@@ -1056,17 +1070,46 @@ def validate_control(message, data_dict) -> None:
 @bot.callback_query_handler(func=lambda call: call.data.startswith("accept_control_") or call.data.startswith("deny_control_"))
 def handle_control_validation(call) -> None:
     action, user_id, control_id, timestamp = call.data.split("_")[0], int(call.data.split("_")[2]), call.data.split("_")[3], call.data.split("_")[4]
+    # mirem si l'usuari ja ha passat el control
+
+    if f.execute_db(f.is_user_in_control, control_id, user_id):
+        bot.send_message(ADMIN_ID, "Aquest control ja ha estat validat.")
+        return
 
     if action == "accept":
-        f.execute_db(f.add_user_to_control, user_id, control_id, timestamp)
-        points = f.execute_db(f.control_points, user_id, timestamp)
-        f.execute_db(f.add_points_to_user, user_id, points)
+        f.execute_db(f.add_user_to_control, control_id, user_id, timestamp)
+        new_points = f.execute_db(f.control_points, user_id, timestamp)
+        points = f.execute_db(f.get_points, user_id) + new_points
+        f.execute_db(f.update, 'punts', user_id, points)
         bot.answer_callback_query(call.id, f"Control acceptat.")
-        bot.send_message(user_id, f"El teu control ha estat acceptat pel Sheriff (+{points} punts)!")
+        bot.send_message(user_id, f"El teu control ha estat acceptat pel Sheriff (+{new_points} punts)!")
     elif action == "deny":
-        bot.answer_callback_query(call.id, "Control denegat correctament. Escriu a continuació el motiu de la denegació")
+        bot.answer_callback_query(call.id, "Control denegat.")
+        bot.send_message(ADMIN_ID, f"Escriu a continuació el motiu de la denegació.")
         bot.register_next_step_handler(call.message, lambda m: handle_denied_control(m, user_id))
 
 def handle_denied_control(message, user_id) -> None:
     reason = message.text
     bot.send_message(user_id, f"El teu control ha estat denegat pel Sheriff. \nMotiu: {reason}.")
+    bot.send_message(ADMIN_ID, f"Control denegat correctament. S'ha notificat a l'usuari.")
+
+@bot.message_handler(commands=['info_controls'])
+def info_controls(message) -> None:
+    #TODO: mostrar informació sobre els controls programats
+    pass
+
+@bot.message_handler(commands=['show_completed_controls'])
+def show_completed_controls(message) -> None:
+    if not f.is_admin(message):
+        bot.send_message(message.chat.id, "No tens permisos per executar aquesta comanda.")
+        return
+
+    # Obtenir controls per ordre de persona i data
+    completed_controls = f.execute_db(f.get_completed_controls)
+    msg = "Controls completats:\n\n"
+    for control in completed_controls:
+        user_id, control_id, timestamp = control
+        user_name = f.execute_db(f.get_name, user_id)
+        msg += f"{user_name} ({user_id}), {control_id}, {timestamp}\n"
+
+    bot.send_message(ADMIN_ID, msg)
