@@ -2,6 +2,8 @@ import telebot
 import os
 import sqlite3
 import sys
+import traceback
+from functools import wraps
 
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -20,13 +22,27 @@ from constants import TOKEN, ADMIN_ID
 
 bot: telebot.TeleBot = telebot.TeleBot(TOKEN)
 
+
+def telegram_safe(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            print(f"Error en executar {func.__name__}")
+            traceback.print_exc()
+
+    return wrapper
+
 # COMANDS
 @bot.message_handler(commands=['start'])
+@telegram_safe
 def start(message) -> None:
     msg = f.file_content_2_string(f.get_path_messages("welcome.txt"))
     bot.send_message(message.chat.id, msg, reply_markup=ReplyKeyboardRemove())
 
 @bot.message_handler(commands=['comandes_disponibles'])
+@telegram_safe
 def ajuda(message) -> None:
     # print("Comandes disponibles: ", message)
     user_id = message.from_user.id
@@ -52,6 +68,7 @@ def ajuda(message) -> None:
         bot.send_message(message.chat.id, msg, reply_markup=ReplyKeyboardRemove())
 
 @bot.message_handler(commands=['inscripcio'])
+@telegram_safe
 def registration(message) -> None:
     # si no existeix la bd crear-la
     if not f.execute_db(f.get_inscripcio_disponible):
@@ -81,6 +98,7 @@ def registration(message) -> None:
                 msg = "No et pots registrar com a bandoler, ets l'administrador del bot."
                 bot.send_message(message.chat.id, msg)
 
+@telegram_safe
 def check_name(dicc_user: dict, message) -> None:
     name = message.text
     if not f.assert_no_bar(name):
@@ -116,6 +134,7 @@ def check_name(dicc_user: dict, message) -> None:
 #         bot.send_message(message.chat.id, msg, reply_markup=markup)
 #         bot.register_next_step_handler(message, lambda m: add_nucli(dicc_user, m))
 
+@telegram_safe
 def check_description(dicc_user: dict, message) -> None:
     description = message.text
     if not f.assert_no_bar(description):
@@ -128,6 +147,7 @@ def check_description(dicc_user: dict, message) -> None:
     bot.send_message(message.chat.id, msg)
     bot.register_next_step_handler(message, lambda m: save_photo(dicc_user, m))
 
+@telegram_safe
 def save_photo(dicc_user: dict, message) -> None:
     if message.content_type == 'photo':  # Comprova si el missatge conté una foto
         # Obtenir la millor resolució de la foto
@@ -152,6 +172,7 @@ def save_photo(dicc_user: dict, message) -> None:
         bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(message, lambda m: save_photo(dicc_user, m))
 
+@telegram_safe
 def data_protection(dicc_user: dict, message) -> None:
     # Implementation for data protection logic
     data_state = message.text
@@ -174,6 +195,7 @@ def data_protection(dicc_user: dict, message) -> None:
         bot.send_message(message.chat.id, msg, reply_markup=markup)
         bot.register_next_step_handler(message, lambda m: data_protection(dicc_user, m))
 
+@telegram_safe
 def instagram_permission(dicc_user: dict, message) -> None:
     # Implementation for Instagram permission logic
     data_state = message.text
@@ -203,6 +225,7 @@ def instagram_permission(dicc_user: dict, message) -> None:
     bot.send_message(message.chat.id, msg)
     
 
+@telegram_safe
 def user_and_victim(cursor: sqlite3.Cursor, id_bandoler: int) -> tuple:
     """
     Retorna una tupla amb l'usuari i la seva víctima.
@@ -217,6 +240,7 @@ def user_and_victim(cursor: sqlite3.Cursor, id_bandoler: int) -> tuple:
         return None, None
 
 @bot.message_handler(commands=['victima'])
+@telegram_safe
 def show_victim_profile(message):
     if f.execute_db(f.id_in_db, message.from_user.id):
         user, bandoler = f.execute_db(user_and_victim, message.from_user.id)
@@ -250,6 +274,7 @@ def show_victim_profile(message):
         bot.send_message(message.chat.id, msg)
 
 @bot.message_handler(commands=['perfil'])
+@telegram_safe
 def show_profile(message):
     if not f.execute_db(f.id_in_db, message.from_user.id):
         bot.send_message(message.chat.id, f.missatge_no_inscrits())
@@ -285,6 +310,7 @@ def show_profile(message):
 #     msg += "Per veure les comandes disponibles prem /comandes_disponibles.\n"
 #     bot.send_message(message.chat.id, msg)    
 
+@telegram_safe
 def id_state_names(cursor: sqlite3.Cursor, id_bandoler: int) -> tuple:
     """
     Retorna un tuple amb l'estat, el nom i el sobrenom del bandoler.
@@ -298,6 +324,7 @@ def id_state_names(cursor: sqlite3.Cursor, id_bandoler: int) -> tuple:
     return id_victima, state_bandoler, state_victima, name_bandoler, name_victima
 
 @bot.message_handler(commands=['enxampar'])
+@telegram_safe
 def enxampar(message):
     if not f.execute_db(f.id_in_db, message.from_user.id):
         bot.send_message(message.chat.id, f.missatge_no_inscrits())
@@ -331,6 +358,7 @@ def enxampar(message):
         msg = "La teva víctima està pendent de confirmació. Espera que confirmi o denegi l'enxampament."
         bot.send_message(message.chat.id, msg)
 
+@telegram_safe
 def updates_confirm(cursor: sqlite3.Cursor, id_bandoler: int, id_victima: int, victima_victima: int) -> str:
     kills = f.get_kills(cursor, id_bandoler)
     points = f.get_points(cursor, id_bandoler)
@@ -341,6 +369,7 @@ def updates_confirm(cursor: sqlite3.Cursor, id_bandoler: int, id_victima: int, v
     f.update(cursor, 'punts', id_bandoler, points + 1)
 
 @bot.message_handler(commands=['confirmar'])
+@telegram_safe
 def confirm_kill(message) -> None:
     if not f.execute_db(f.id_in_db, message.from_user.id):
         bot.send_message(message.chat.id, f.missatge_no_inscrits())
@@ -385,6 +414,7 @@ def confirm_kill(message) -> None:
             bot.send_message(id_bandoler, msg_bandoler)
 
 @bot.message_handler(commands=['denegar'])
+@telegram_safe
 def deny_kill(message) -> None:
     if not f.execute_db(f.id_in_db, message.from_user.id):
         bot.send_message(message.chat.id, f.missatge_no_inscrits())
@@ -402,6 +432,7 @@ def deny_kill(message) -> None:
         bot.send_message(id_bandoler, msg_bandoler)
         bot.send_message(id_victima, msg_victima)
 
+@telegram_safe
 def winning_message(id_winner: int) -> None:
     """
     Envia missatge de guanyador a tots els participants + el missatge de la Nyacapada.
@@ -440,6 +471,7 @@ def winning_message(id_winner: int) -> None:
 #     bot.send_message(message.chat.id, msg)
 
 @bot.message_handler(commands=['ranquing_bandolers'])
+@telegram_safe
 def bandolers_rank(message):
     if f.execute_db(f.get_inscripcio_disponible):
         bot.send_message(message.chat.id, "No es pot mostrar el ranquing perquè encara no ha començat el joc.")
@@ -459,6 +491,7 @@ def bandolers_rank(message):
     bot.send_message(message.chat.id, msg)
 
 @bot.message_handler(commands=['cementiri'])
+@telegram_safe
 def cementiri(message):
     cementiri_bandolers = f.execute_db(f.graveyard)
     msg = "Cementiri de bandolers:\n\n"
@@ -470,6 +503,7 @@ def cementiri(message):
     bot.send_message(message.chat.id, msg)
 
 @bot.message_handler(commands=['assignar_victimes'])
+@telegram_safe
 def assignar_victimes(message) -> None:
     if not f.is_admin(message):
         bot.send_message(message.chat.id, "No tens permisos per executar aquesta comanda.")
@@ -481,6 +515,7 @@ def assignar_victimes(message) -> None:
     bot.send_message(ADMIN_ID, msg_admin)
 
 @bot.message_handler(commands=['kill_bot'])
+@telegram_safe
 def kill_bot(message) -> None:
     if f.is_admin(message): 
         msg = "Estas segur que vols parar el bot?"
@@ -489,6 +524,7 @@ def kill_bot(message) -> None:
         message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)
         bot.register_next_step_handler(message, confirm_kill_bot) 
 
+@telegram_safe
 def confirm_kill_bot(message) -> None:
     if message.text == 'Sí':
         msg = "Es pararà el bot al escriure qualsevol cosa per teclat."
@@ -504,6 +540,7 @@ def confirm_kill_bot(message) -> None:
         bot.register_next_step_handler(message, confirm_kill_bot)
 
 @bot.message_handler(commands=['comprobar_dades_usuaris'])
+@telegram_safe
 def check_dades_usuaris(message) -> None:
     if not f.is_admin(message):
         bot.send_message(message.chat.id, "No tens permisos per executar aquesta comanda.")
@@ -515,6 +552,7 @@ def check_dades_usuaris(message) -> None:
         bot.send_message(ADMIN_ID, "Hi ha usuaris que no estan ben registrats. Comprova les dades i torna-ho a intentar.")
 
 @bot.message_handler(commands=['tancar_inscripcions'])
+@telegram_safe
 def tancar_inscripcions(message) -> None:
     if f.is_admin(message):
         valor = f.execute_db(f.get_inscripcio_disponible)
@@ -527,6 +565,7 @@ def tancar_inscripcions(message) -> None:
         
 
 @bot.message_handler(commands=['obrir_inscripcions'])
+@telegram_safe
 def obrir_inscripcions(message) -> None:
     if f.is_admin(message):
         valor = f.execute_db(f.get_inscripcio_disponible)
@@ -538,6 +577,7 @@ def obrir_inscripcions(message) -> None:
         bot.send_message(ADMIN_ID, msg)
 
 @bot.message_handler(commands=['get_ids'])
+@telegram_safe
 def get_ids(message) -> None:
     if f.is_admin(message):
         for user_id in f.execute_db(f.get_all_users):
@@ -549,12 +589,14 @@ def get_ids(message) -> None:
             bot.send_message(ADMIN_ID, msg)
 
 @bot.message_handler(commands=['text'])
+@telegram_safe
 def text(message) -> None:
     if f.is_admin(message):
         msg = "Introdueix el text que vols enviar:\n"
         bot.send_message(ADMIN_ID, msg)
         bot.register_next_step_handler(message, choose_text_target)
 
+@telegram_safe
 def choose_text_target(message) -> None:
     if f.is_admin(message):
         text = message.text
@@ -568,6 +610,7 @@ def choose_text_target(message) -> None:
             bot.register_next_step_handler(message, lambda m: send_message_to_target(m, text))
 
 
+@telegram_safe
 def send_message_to_target(message, text: str) -> None:
     if type(message) is str:
         target = message
@@ -602,6 +645,7 @@ def send_message_to_target(message, text: str) -> None:
         bot.send_message(ADMIN_ID, msg)
 
 @bot.message_handler(commands=['update_user'])
+@telegram_safe
 def select_user_to_update(message) -> None:
     if f.is_admin(message):
         # Botons per seleccionar usuari
@@ -613,6 +657,7 @@ def select_user_to_update(message) -> None:
         message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)  
         bot.register_next_step_handler(message, update_user)
 
+@telegram_safe
 def update_user(message) -> None:
     if f.is_admin(message):
         # user_name = message.text
@@ -632,6 +677,7 @@ def update_user(message) -> None:
             msg = "Usuari no trobat."
             bot.send_message(ADMIN_ID, msg)
 
+@telegram_safe
 def update_field(message, user_id) -> None:
     if f.is_admin(message):
         field = message.text.strip().lower()  # Normalitzar el camp a minúscules
@@ -646,6 +692,7 @@ def update_field(message, user_id) -> None:
             msg = "Camp no vàlid."
             bot.send_message(ADMIN_ID, msg)
 
+@telegram_safe
 def update_value(message, field, user_id) -> None:
     if f.is_admin(message):
         value = message.text
@@ -672,6 +719,7 @@ def update_value(message, field, user_id) -> None:
         bot.send_message(ADMIN_ID, msg)
 
 @bot.message_handler(commands=['cicle_bandolers'])
+@telegram_safe
 def cicle_bandolers(message) -> None:
     if f.is_admin(message) and not f.execute_db(f.get_inscripcio_disponible):
         bot.send_message(ADMIN_ID, f.execute_db(f.text_cycle))
@@ -680,6 +728,7 @@ def cicle_bandolers(message) -> None:
         bot.send_message(ADMIN_ID, msg)
 
 @bot.message_handler(commands=['restart_db'])
+@telegram_safe
 def restart_data_base(message) -> None:
     if f.is_admin(message):
         msg = "Estas segur que vols reiniciar la base de dades?"
@@ -688,6 +737,7 @@ def restart_data_base(message) -> None:
         message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)
         bot.register_next_step_handler(message, confirm_restart_db)
 
+@telegram_safe
 def confirm_restart_db(message) -> None:
     if f.is_admin(message):
         if message.text != 'Sí':
@@ -699,6 +749,7 @@ def confirm_restart_db(message) -> None:
         bot.send_message(ADMIN_ID, msg)
 
 @bot.message_handler(commands=['matar'])
+@telegram_safe
 def matar(message) -> None:
     if f.is_admin(message):
         # Botons per seleccionar usuari 
@@ -709,6 +760,7 @@ def matar(message) -> None:
         message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)
         bot.register_next_step_handler(message, are_you_sure_kill)
 
+@telegram_safe
 def are_you_sure_kill(message) -> None:
     if f.is_admin(message):
         user_name = message.text
@@ -720,6 +772,7 @@ def are_you_sure_kill(message) -> None:
         message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)
         bot.register_next_step_handler(message, lambda m: select_victima(m, user_name))
 
+@telegram_safe
 def select_victima(message, user_name) -> None:
     if f.is_admin(message):
         if message.text == 'No':
@@ -740,50 +793,55 @@ def select_victima(message, user_name) -> None:
         message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)
         bot.register_next_step_handler(message, lambda m: choose_killing_motive(m, id_user))
     
+    @telegram_safe
     def choose_killing_motive(message, id_user) -> None:
         if f.is_admin(message):
             if message.text == 'Cancelar':
                 msg = "Operació cancel·lada."
                 bot.send_message(ADMIN_ID, msg)
                 return
-            elif message.text == 'Fugitiu':
-                reason = 'fugitiu'
-            else:
-                reason = 'altres causes'
-                msg = "Escriu el motiu de la mort de l'usuari:\n"
-                bot.send_message(ADMIN_ID, msg)
-                bot.register_next_step_handler(message, lambda m: kill_user(m, id_user, reason))
-        
+            if message.text == 'Fugitiu':
+                kill_user(message, id_user, 'fugitiu')
+                return
+
+            reason = 'altres causes'
+            msg = "Escriu el motiu de la mort de l'usuari:\n"
+            bot.send_message(ADMIN_ID, msg)
+            bot.register_next_step_handler(message, lambda m: kill_user(m, id_user, reason))
+
+    @telegram_safe
     def kill_user(message, id_user, reason) -> None:
         if f.is_admin(message):
+            name_user = f.execute_db(f.name_or_surname, id_user)
             if reason == 'altres causes':
-                motive = message.text
+                motive = f"{name_user} ha estat eliminat del joc.\nMotiu: {message.text}"
             else:
                 motive = f"{name_user} ha estat declarat fugitiu per no presentar-se al mínim nombre de Control de Bandolers. El Sheriff l'ha declarat mort! ACS🔫🕊"
 
-        name_user = f.execute_db(f.name_or_surname, id_user)
-        killer = f.execute_db(f.killer, id_user)
-        f.execute_db(f.kill, id_user) 
+            name_user = f.execute_db(f.name_or_surname, id_user)
+            killer = f.execute_db(f.killer, id_user)
+            f.execute_db(f.kill, id_user)
 
-        send_message_to_target('Tots els usuaris', motive)
-        bot.send_message(ADMIN_ID, motive)
-        bot.send_message(id_user, "Gràcies per participar!")
+            send_message_to_target('Tots els usuaris', motive)
+            bot.send_message(ADMIN_ID, motive)
+            bot.send_message(id_user, "Gràcies per participar!")
 
-        n_bandolers = f.execute_db(f.n_bandolers)
-        if n_bandolers > 1:
-            msg_participants = f"Queden {n_bandolers} bandolers en joc🏜"
-            send_message_to_target('Tots els usuaris', msg_participants)
-            bot.send_message(ADMIN_ID, msg_participants)
+            n_bandolers = f.execute_db(f.n_bandolers)
+            if n_bandolers > 1:
+                msg_participants = f"Queden {n_bandolers} bandolers en joc🏜"
+                send_message_to_target('Tots els usuaris', msg_participants)
+                bot.send_message(ADMIN_ID, msg_participants)
 
-        victima = f.execute_db(f.get_victim, killer)
-        # print(f"user: {id_user}, killer: {killer}, victima de killer: {victima}")
-        if victima == killer:
-            winning_message(killer)
-        else:
-            msg_killer = f"La teva víctima ha estat actualitzada. Pots veure la seva informació prement /victima."
-            bot.send_message(killer, msg_killer)
+            victima = f.execute_db(f.get_victim, killer)
+            # print(f"user: {id_user}, killer: {killer}, victima de killer: {victima}")
+            if victima == killer:
+                winning_message(killer)
+            else:
+                msg_killer = f"La teva víctima ha estat actualitzada. Pots veure la seva informació prement /victima."
+                bot.send_message(killer, msg_killer)
 
 @bot.message_handler(commands=['usuaris'])
+@telegram_safe
 def usuaris(message) -> None:
     if f.is_admin(message):
 
@@ -793,6 +851,7 @@ def usuaris(message) -> None:
         message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)
         bot.register_next_step_handler(message, show_users)
 
+@telegram_safe
 def show_users(message) -> None:
     match message.text:
         case 'Bandolers':
@@ -817,11 +876,13 @@ def show_users(message) -> None:
             f.execute_db(f.show_user, id, bot, ADMIN_ID)
 
 @bot.message_handler(commands=['regles_del_joc'])
+@telegram_safe
 def regles_del_joc(message) -> None:
     msg = f.file_content_2_string(f.get_path_messages("game_rules.txt"))
     bot.send_message(message.chat.id, msg, parse_mode='HTML')
 
 @bot.message_handler(commands=['delete_user'])
+@telegram_safe
 def delete_user(message) -> None:
     if f.is_admin(message):
         markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
@@ -831,6 +892,7 @@ def delete_user(message) -> None:
         bot.send_message(ADMIN_ID, "Introdueix l'ID de l'usuari que vols eliminar:\n", reply_markup=markup)
         bot.register_next_step_handler(message, delete_user2)
 
+@telegram_safe
 def delete_user2(message) -> None:
     user_id = message.text
     if f.execute_db(f.id_in_db, user_id):
@@ -840,6 +902,7 @@ def delete_user2(message) -> None:
     else:
         bot.send_message(ADMIN_ID, "Operació cancel·lada")
 
+@telegram_safe
 def update_state_and_kills_2_start(cursor: sqlite3.Cursor) -> None:
    for user in f.get_all_users(cursor):
        f.update(cursor, 'estat', user, 'jugant')
@@ -847,6 +910,7 @@ def update_state_and_kills_2_start(cursor: sqlite3.Cursor) -> None:
 
 
 @bot.message_handler(commands=['comencar_joc'])
+@telegram_safe
 def començar_joc(message) -> None:
     if f.is_admin(message):
         f.execute_db(update_state_and_kills_2_start)
@@ -862,6 +926,7 @@ def començar_joc(message) -> None:
         send_message_to_target('Tots els usuaris', f.file_content_2_string(f.get_path_messages("start.txt")))
 
 @bot.message_handler(commands=['estat_bot'])
+@telegram_safe
 def estat_bot(message) -> None:
     if f.is_admin(message):
         msg = "Estat del bot:\n"
@@ -875,6 +940,7 @@ def estat_bot(message) -> None:
         bot.send_message(ADMIN_ID, msg)
 
 @bot.message_handler(commands=['send_automatic_winning_message'])
+@telegram_safe
 def send_winning_message(message) -> None:
     if f.is_admin(message):
         winner_id = f.execute_db(f.get_winner)
@@ -884,6 +950,7 @@ def send_winning_message(message) -> None:
            winning_message(winner_id)
 
 @bot.message_handler(commands=['send_winning_message_given_id'])
+@telegram_safe
 def send_winning_message_given_id(message) -> None:
     if f.is_admin(message):
         msg = "Introdueix l'ID del guanyador:\n"
@@ -894,6 +961,7 @@ def send_winning_message_given_id(message) -> None:
         bot.send_message(ADMIN_ID, msg, reply_markup=markup)
         bot.register_next_step_handler(message, lambda m: send_winning_message_by_id(m))
 
+@telegram_safe
 def send_winning_message_by_id(message) -> None:
     if f.is_admin(message):
         user_id = message.text
@@ -909,6 +977,7 @@ def send_winning_message_by_id(message) -> None:
             message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)
             bot.register_next_step_handler(message, lambda m: confirm_winner(m, user_id))
 
+@telegram_safe
 def confirm_winner(message, user_id) -> None:
     if f.is_admin(message):
         if message.text == 'Sí':
@@ -918,6 +987,7 @@ def confirm_winner(message, user_id) -> None:
             bot.send_message(ADMIN_ID, "Operació cancel·lada.")
 
 @bot.message_handler(commands=['editar_perfil'])
+@telegram_safe
 def edit_profile(message):
     if not f.execute_db(f.id_in_db, message.from_user.id):
         bot.send_message(message.chat.id, f.missatge_no_inscrits())
@@ -931,6 +1001,7 @@ def edit_profile(message):
     message = bot.send_message(message.chat.id, msg, reply_markup=markup)
     bot.register_next_step_handler(message, edit_profile2)
 
+@telegram_safe
 def edit_profile2(message):
     field = message.text.strip().lower()  # Normalitzar el camp a minúscules
     match field:
@@ -949,6 +1020,7 @@ def edit_profile2(message):
             msg = "Camp no vàlid, operació cancel·lada."
             bot.send_message(message.chat.id, msg)
 
+@telegram_safe
 def edit_profile3(message, field):
     value = message.text
     match field:
@@ -986,6 +1058,7 @@ def edit_profile3(message, field):
             bot.send_message(message.chat.id, msg)
 
 @bot.message_handler(commands=['control'])
+@telegram_safe
 def start_control(message) -> None:
     if not f.execute_db(f.id_in_db, message.from_user.id):
         bot.send_message(message.chat.id, f.missatge_no_inscrits())
@@ -1036,6 +1109,7 @@ def start_control(message) -> None:
         bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(message, lambda m: validate_control(m, data_dict))
 
+@telegram_safe
 def validate_control(message, data_dict) -> None:
     if message.content_type != 'photo':
         msg = "No has enviat una foto. El control no s'ha validat."
@@ -1068,6 +1142,7 @@ def validate_control(message, data_dict) -> None:
 
 # Validació admin dels controls
 @bot.callback_query_handler(func=lambda call: call.data.startswith("accept_control_") or call.data.startswith("deny_control_"))
+@telegram_safe
 def handle_control_validation(call) -> None:
     action, user_id, control_id, timestamp = call.data.split("_")[0], int(call.data.split("_")[2]), call.data.split("_")[3], call.data.split("_")[4]
     # mirem si l'usuari ja ha passat el control
@@ -1088,17 +1163,20 @@ def handle_control_validation(call) -> None:
         bot.send_message(ADMIN_ID, f"Escriu a continuació el motiu de la denegació.")
         bot.register_next_step_handler(call.message, lambda m: handle_denied_control(m, user_id))
 
+@telegram_safe
 def handle_denied_control(message, user_id) -> None:
     reason = message.text
     bot.send_message(user_id, f"El teu control ha estat denegat pel Sheriff. \nMotiu: {reason}.")
     bot.send_message(ADMIN_ID, f"Control denegat correctament. S'ha notificat a l'usuari.")
 
 @bot.message_handler(commands=['info_controls'])
+@telegram_safe
 def info_controls(message) -> None:
     #TODO: mostrar informació sobre els controls programats
     pass
 
 @bot.message_handler(commands=['show_completed_controls'])
+@telegram_safe
 def show_completed_controls(message) -> None:
     if not f.is_admin(message):
         bot.send_message(message.chat.id, "No tens permisos per executar aquesta comanda.")
