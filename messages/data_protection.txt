@@ -1,2 +1,6 @@
-#TODO
-Dono permís a que es tractin les meves dades bla bla bla :) 
+<b>Tractament de dades personals per a la participació (obligatori)<b>
+
+En inscriure’t al joc, acceptes que l'organització recolli i tracti les teves dades de l'inscripció amb l'única finalitat de gestionar, coordinar i desenvolupar l'activitat.
+
+- Privacitat: Les teves dades no es cediran a tercers. Només es compartiran amb la resta de participants perquè et puguin reconèixer.
+- Conservació: Totes les dades s'eliminaran una vegada finalitzat el joc i l'entrega de premis.

@@ -1,4 +1,6 @@
-#TODO
-Accepto a que s'utilitzin les imatges dels controls de bandolers per fins informatius al perfil d'instagram del joc @bandolersdaiguadolca (opcional).
-Les imatges es penjarien a les històries amb la cara del bandoler tapada per no revelar la vostra identitat als altres jugadors.
-Donat el cas que guanyis el joc, es penjarà la teva imatge de l'inscripció o la d'algun control (aquest cop sense tapar la cara).
+<b>Drets d'imatge i publicació a xarxes socials<b>
+
+Autoritzes a l'organització a publicar imatges del joc als seus canals i xarxes socials oficials sota les següents condicions:
+
+- <b>Controls<b>: Les fotografies dels controls es podran publicar, però es taparà la cara del bandoler per tal de protegir la seva identitat durant el joc.
+- <b>Guanyador<b>: Només en el cas de resultar guanyador del joc, es podran publicar imatges on es mostri el seu rostre de manera visible (et podràs posar en contacte amb @SheriffDeDosrius per triar la imatge o condicions que vulguis).

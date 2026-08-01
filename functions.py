@@ -689,6 +689,32 @@ def send_winning_message(bot, id_winners: list[int]) -> None:
     for id_winner in id_winners:
         bot.send_message(id_winner, msg_bandoler)
 
+def kill_runaway(bot, id_user) -> None:
+    name_user = execute_db(name_or_surname, id_user)
+
+    motive = f"{name_user} ha estat declarat fugitiu per no presentar-se a cap Control de Bandolers del dia. El Sheriff l'ha declarat mort! ACS🔫🕊"
+
+    name_user = execute_db(name_or_surname, id_user)
+    killer = execute_db(killer, id_user)
+    execute_db(kill, id_user)
+
+    send_message_to_target('Tots els usuaris', motive, bot)
+    bot.send_message(ADMIN_ID, motive)
+
+    n_bandolers = execute_db(n_bandolers)
+    if n_bandolers > 1:
+        msg_participants = f"Queden {n_bandolers} bandolers en joc🏜"
+        send_message_to_target('Tots els usuaris', msg_participants, bot)
+        bot.send_message(ADMIN_ID, msg_participants)
+
+    victima = execute_db(get_victim, killer)
+    # print(f"user: {id_user}, killer: {killer}, victima de killer: {victima}")
+    if victima == killer:
+        send_winning_message(bot, [killer]) 
+    else:
+        msg_killer = f"La teva víctima ha estat actualitzada. Pots veure la seva informació prement /victima."
+        bot.send_message(killer, msg_killer)
+
 
 if __name__ == "__main__":
     # print(file_content_2_string(get_path_comandes('inicials.txt')))

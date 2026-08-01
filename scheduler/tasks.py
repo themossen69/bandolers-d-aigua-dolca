@@ -20,6 +20,7 @@ from functions import (
     get_path_messages, 
     file_content_2_string, 
     send_message_to_target, 
+    kill_runaway,
     user_with_themselves_as_victim, 
     send_winning_message,
     get_winner
@@ -81,7 +82,6 @@ def handle_task(bot, task_name, ADMIN_ID):
             if bool_last_control:
                 msg_list = ["L'últim control del dia ha finalitzat."]
                 msg_list.append("ATENCIÓ: No has fet cap control del dia, ets declarat fugitiu. Gràcies per participar!")
-                # TODO: gestionar l'eliminació
             
             if next_control:
                 msg_list[0] += next_control_message(next_control["inici"], next_control["final"])
@@ -91,6 +91,7 @@ def handle_task(bot, task_name, ADMIN_ID):
                 if has_day_controls:
                     bot.send_message(user_id, msg_list[0])
                 else:
+                    kill_runaway(bot, user_id)
                     bot.send_message(user_id, "\n".join(msg_list))
                 time.sleep(0.05)  # Petita pausa per evitar problemes amb l'enviament massiu
             except Exception as e:

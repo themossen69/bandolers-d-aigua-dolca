@@ -108,22 +108,6 @@ def check_name(dicc_user: dict, message) -> None:
     bot.send_message(message.chat.id, msg)
     bot.register_next_step_handler(message, lambda m: check_description(dicc_user, m))
 
-
-# def add_nucli(dicc_user: dict, message) -> None:
-#     nucli = message.text
-#     if nucli in ['Dosrius', 'Canyamars', 'Can Massuet']:
-#         dicc_user['nucli'] = nucli
-#         msg = "Introdueix una descripció de tu mateix que inclogui els teus trets físics més característics (perquè els altres bandolers et puguin reconèixer).\n"
-#         #msg += "Per exemple: 'Sóc un bandoler molt perillós que roba a la gent de Canyamars'.\n"
-#         bot.send_message(message.chat.id, msg)
-#         bot.register_next_step_handler(message, lambda m: check_description(dicc_user, m))
-#     else:
-#         markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
-#         markup.add('Dosrius', 'Canyamars', 'Can Massuet')
-#         msg = "No s'ha pogut registrar el nucli. Torna a intentar-ho. \n\nIMPORTANT: Prem un dels 3 botons (Si no escriu: Dosrius, Canyamars o Can Massuet)."
-#         bot.send_message(message.chat.id, msg, reply_markup=markup)
-#         bot.register_next_step_handler(message, lambda m: add_nucli(dicc_user, m))
-
 @telegram_safe
 def check_description(dicc_user: dict, message) -> None:
     description = message.text
@@ -154,7 +138,7 @@ def save_photo(dicc_user: dict, message) -> None:
         # Acceptar que es tractaran aquestes dades
         markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
         markup.add('Accepto', 'No accepto')
-        message = bot.send_message(message.chat.id, f.file_content_2_string(f.get_path_messages("data_protection.txt")), reply_markup=markup)
+        message = bot.send_message(message.chat.id, f.file_content_2_string(f.get_path_messages("data_protection.txt")), reply_markup=markup, parse_mode="HTML")
         bot.register_next_step_handler(message, lambda m: data_protection(dicc_user, m))
 
     else:
@@ -171,7 +155,7 @@ def data_protection(dicc_user: dict, message) -> None:
         markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
         markup.add('Accepto', 'No accepto')
         msg = f.file_content_2_string(f.get_path_messages("instagram_permission.txt"))
-        bot.send_message(message.chat.id, msg, reply_markup=markup)
+        bot.send_message(message.chat.id, msg, reply_markup=markup, parse_mode="HTML")
         bot.register_next_step_handler(message, lambda m: instagram_permission(dicc_user, m))
 
     elif data_state == 'No accepto':
