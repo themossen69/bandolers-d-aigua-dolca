@@ -1,4 +1,3 @@
-from datetime import date
 import sqlite3
 import io
 import random
@@ -6,6 +5,7 @@ import os
 import queue
 import sys
 import csv
+import time
 
 private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private"))
 if private_path not in sys.path:
@@ -510,10 +510,17 @@ def get_all_controls(cursor: sqlite3.Cursor) -> list:
     controls = cursor.fetchall()
     return [list(control) for control in controls]  # Retorna una llista de llistes amb tots els controls
 
-def get_next_control(cursor: sqlite3.Cursor, current_timestamp: str) -> list:
+def get_next_control(cursor: sqlite3.Cursor, current_timestamp: str) -> dict:
     cursor.execute("SELECT * FROM controls WHERE inici > ? ORDER BY inici ASC LIMIT 1", (current_timestamp,))
     next_control = cursor.fetchone()
-    return list(next_control) if next_control else None  # Retorna el proper control o None si no hi ha cap
+    if next_control:
+        control_dict = {
+            'id': next_control[0],
+            'inici': next_control[1],
+            'final': next_control[2],
+            'dia': next_control[3]
+        }
+    return control_dict if next_control else None  # Retorna el proper control o None si no hi ha cap
 
 def data_strip(data: str) -> tuple:
     # Retorna dia, mes, any, hora i minuts per separat
@@ -521,6 +528,10 @@ def data_strip(data: str) -> tuple:
     year, month, day = date_part.split('-')
     hour, minute, second = time_part.split(':')
     return day, month, year, hour, minute, second
+
+def format_data(day: str, month: str, year: str, hour: str, minute: str, second: str) -> str:
+    # Retorna la data en format 'YYYY-MM-DD HH:MM:SS'
+    return f"{year}-{month}-{day} {hour}:{minute}:{second}"
 
 
 def next_control_message(inici: str, final: str) -> str:
@@ -552,6 +563,56 @@ def get_user_controls(cursor: sqlite3.Cursor, user_id: int) -> list:
     user_controls = cursor.fetchall()
     return [list(control) for control in user_controls]
 
+def obrir_inscripcions(cursor: sqlite3.Cursor, bot) -> None:
+    valor = execute_db(get_inscripcio_disponible)
+    if not valor:
+        execute_db(change_inscripcio_disponible)
+        msg = "Les inscripcions s'han obert. Ara els usuaris poden registrar-se.\n"
+    else:
+        msg = "Les inscripcions ja estan obertes.\n"
+    bot.send_message(ADMIN_ID, msg)
+
+def update_state_and_kills_2_start(cursor: sqlite3.Cursor) -> None:
+   for user in get_all_users(cursor):
+       update(cursor, 'estat', user, 'jugant')
+       update(cursor, 'kills', user, 0)
+
+def comencar_joc(cursor: sqlite3.Cursor, bot) -> None:
+    execute_db(update_state_and_kills_2_start)
+    execute_db(set_winner, 0)  # Resetejar guanyador
+    # Tancar inscripcions
+    if execute_db(get_inscripcio_disponible):
+        execute_db(change_inscripcio_disponible)
+    # Assignar víctimes
+    assign_victims_cyclic(cursor)
+    msg_admin = "S'han posat a tots els usuaris com a jugant amb 0 kills i s'han assignat les víctimes.\n/usuaris per veure els usuaris registrats.\n\n"
+    msg_admin += "El joc ha començat!"
+    bot.send_message(ADMIN_ID, msg_admin)
+    send_message_to_target('Tots els usuaris', f.file_content_2_string(f.get_path_messages("start.txt")))
+
+def send_message_to_target(target:str, text: str, bot) -> None:
+    match target:
+        case 'Bandolers':
+            users = execute_db(get_all_bandolers)
+        case 'Enxampats':
+            users = execute_db(get_all_enxampats)
+        case 'Pendents':
+            users = execute_db(get_all_pending)
+        case 'Tots els usuaris':
+            users = execute_db(get_all_users)
+        case 'Cancel·lar':
+            msg = "Enviament de missatge cancel·lat."
+            bot.send_message(ADMIN_ID, msg)
+            return
+        case _:
+            users = [execute_db(get_user_id_by_name, target)]
+
+    for user_id in users:
+        bot.send_message(user_id, text)
+        time.sleep(0.05)  # Petita pausa per evitar problemes amb l'enviament massiu
+
+    msg = f"Missatge enviat a {target}."
+    bot.send_message(ADMIN_ID, msg)
 
 if __name__ == "__main__":
     # print(file_content_2_string(get_path_comandes('inicials.txt')))

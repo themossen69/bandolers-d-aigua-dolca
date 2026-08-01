@@ -3,6 +3,7 @@ import os
 import sqlite3
 import sys
 import traceback
+import time
 from functools import wraps
 
 from datetime import datetime, timezone
@@ -396,12 +397,12 @@ def confirm_kill(message) -> None:
         msg_participants = f"{name_bandoler} ha enxampat a {name_victima}! ACS🔫🕊"
 
         bot.send_message(id_bandoler, msg_bandoler)
-        send_message_to_target('Tots els usuaris', msg_participants)
+        f.send_message_to_target('Tots els usuaris', msg_participants, bot)
         bot.send_message(ADMIN_ID, msg_participants)
         n_bandolers = f.execute_db(f.n_bandolers)
         if n_bandolers > 1:
             msg_participants = f"Queden {n_bandolers} bandolers en joc🏜"
-            send_message_to_target('Tots els usuaris', msg_participants)
+            f.send_message_to_target('Tots els usuaris', msg_participants, bot)
             bot.send_message(ADMIN_ID, msg_participants)
 
         # Comprovar que la victima no sigui ell mateix
@@ -470,7 +471,7 @@ def winning_message(id_winner: int) -> None:
 #         msg += f"{i+1}. {nucli[0]}: {nucli[1]} participants\n"
 #     bot.send_message(message.chat.id, msg)
 
-@bot.message_handler(commands=['ranquing_bandolers'])
+@bot.message_handler(commands=['ranquing_bandolers']) # TODO: ranquing per punts i kills
 @telegram_safe
 def bandolers_rank(message):
     if f.execute_db(f.get_inscripcio_disponible):
@@ -502,7 +503,7 @@ def cementiri(message):
         msg += f"{i+1}. {name_user}\n"
     bot.send_message(message.chat.id, msg)
 
-@bot.message_handler(commands=['assignar_victimes'])
+@bot.message_handler(commands=['assignar_victimes']) #TODO: Si scheduler ==> eliminar comanda
 @telegram_safe
 def assignar_victimes(message) -> None:
     if not f.is_admin(message):
@@ -564,7 +565,7 @@ def tancar_inscripcions(message) -> None:
         bot.send_message(ADMIN_ID, msg)
         
 
-@bot.message_handler(commands=['obrir_inscripcions'])
+@bot.message_handler(commands=['obrir_inscripcions']) # TODO: Si scheduler ==> eliminar comanda
 @telegram_safe
 def obrir_inscripcions(message) -> None:
     if f.is_admin(message):
@@ -607,42 +608,11 @@ def choose_text_target(message) -> None:
                 markup.add(f.execute_db(f.get_name,user))
             msg = "A qui vols enviar el missatge?\n"
             message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)
-            bot.register_next_step_handler(message, lambda m: send_message_to_target(m, text))
-
+            bot.register_next_step_handler(message, lambda m: send_message_to_target_from_text_command(m, text, bot))
 
 @telegram_safe
-def send_message_to_target(message, text: str) -> None:
-    if type(message) is str:
-        target = message
-    else:
-        target = message.text
-
-        if not f.is_admin(message):
-            msg = "No tens permisos per enviar missatges a tots els usuaris."
-            bot.send_message(message.from_user.id, msg)
-            return
-
-    if text:
-        match target:
-            case 'Bandolers':
-                users = f.execute_db(f.get_all_bandolers)
-            case 'Enxampats':
-                users = f.execute_db(f.get_all_enxampats)
-            case 'Pendents':
-                users = f.execute_db(f.get_all_pending)
-            case 'Tots els usuaris':
-                users = f.execute_db(f.get_all_users)
-            case 'Cancel·lar':
-                msg = "Enviament de missatge cancel·lat."
-                bot.send_message(ADMIN_ID, msg)
-                return
-            case _:
-                users = [f.execute_db(f.get_user_id_by_name, target)]
-
-        for user_id in users:
-            bot.send_message(user_id, text, reply_markup=ReplyKeyboardRemove())
-        msg = f"Missatge enviat a {target}."
-        bot.send_message(ADMIN_ID, msg)
+def send_message_to_target_from_text_command(message, text, bot) -> None:
+    f.send_message_to_target(message.text, text, bot)
 
 @bot.message_handler(commands=['update_user'])
 @telegram_safe
@@ -822,14 +792,14 @@ def select_victima(message, user_name) -> None:
             killer = f.execute_db(f.killer, id_user)
             f.execute_db(f.kill, id_user)
 
-            send_message_to_target('Tots els usuaris', motive)
+            f.send_message_to_target('Tots els usuaris', motive, bot)
             bot.send_message(ADMIN_ID, motive)
             bot.send_message(id_user, "Gràcies per participar!")
 
             n_bandolers = f.execute_db(f.n_bandolers)
             if n_bandolers > 1:
                 msg_participants = f"Queden {n_bandolers} bandolers en joc🏜"
-                send_message_to_target('Tots els usuaris', msg_participants)
+                f.send_message_to_target('Tots els usuaris', msg_participants, bot)
                 bot.send_message(ADMIN_ID, msg_participants)
 
             victima = f.execute_db(f.get_victim, killer)
@@ -902,18 +872,11 @@ def delete_user2(message) -> None:
     else:
         bot.send_message(ADMIN_ID, "Operació cancel·lada")
 
-@telegram_safe
-def update_state_and_kills_2_start(cursor: sqlite3.Cursor) -> None:
-   for user in f.get_all_users(cursor):
-       f.update(cursor, 'estat', user, 'jugant')
-       f.update(cursor, 'kills', user, 0)
-
-
-@bot.message_handler(commands=['comencar_joc'])
+@bot.message_handler(commands=['comencar_joc']) # TODO: Si scheduler ==> eliminar comanda
 @telegram_safe
 def començar_joc(message) -> None:
     if f.is_admin(message):
-        f.execute_db(update_state_and_kills_2_start)
+        f.execute_db(f.update_state_and_kills_2_start)
         f.execute_db(f.set_winner, 0)  # Resetejar guanyador
         # Tancar inscripcions
         if f.execute_db(f.get_inscripcio_disponible):
@@ -923,7 +886,7 @@ def començar_joc(message) -> None:
         msg_admin = "S'han posat a tots els usuaris com a jugant amb 0 kills i s'han assignat les víctimes.\n/usuaris per veure els usuaris registrats.\n\n"
         msg_admin += "El joc ha començat!"
         bot.send_message(ADMIN_ID, msg_admin)
-        send_message_to_target('Tots els usuaris', f.file_content_2_string(f.get_path_messages("start.txt")))
+        f.send_message_to_target('Tots els usuaris', f.file_content_2_string(f.get_path_messages("start.txt")), bot)
 
 @bot.message_handler(commands=['estat_bot'])
 @telegram_safe
@@ -1088,7 +1051,7 @@ def start_control(message) -> None:
         msg = "No hi ha cap control actiu en aquest moment.\n"
         next_control = f.execute_db(f.get_next_control, data_dict['timestamp'])
         if next_control:
-            msg += f.next_control_message(next_control[1], next_control[2])
+            msg += f.next_control_message(next_control["inici"], next_control["final"])
             msg += "\nMés informació sobre els controls a /info_controls."
         else:
             msg += "No hi ha cap control més programat."
@@ -1099,7 +1062,7 @@ def start_control(message) -> None:
         msg = "Ja has passat el control assignat a aquesta data."
         next_control = f.execute_db(f.get_next_control, data_dict['timestamp'])
         if next_control:
-            msg += "\n" + f.next_control_message(next_control[1], next_control[2])
+            msg += "\n" + f.next_control_message(next_control["inici"], next_control["final"])
             msg += "\nMés informació sobre els controls a /info_controls."
         bot.send_message(message.chat.id, msg)
         return

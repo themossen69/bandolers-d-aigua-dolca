@@ -3,6 +3,9 @@ import time
 import os
 import sys
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from scheduler.scheduler import ini_scheduler
+
 private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private"))
 if private_path not in sys.path:
     sys.path.insert(0, private_path)
@@ -22,6 +25,7 @@ execute_db(create_controls_bandolers_DB)
 
 # MAIN
 if __name__ == "__main__":
+    scheduler = ini_scheduler(bot, ADMIN_ID)
     bot.send_message(ADMIN_ID, "El bot s'ha iniciat correctament.\n/estat_bot per veure l'estat del bot.")
     try:  
         bot.polling(timeout=120, skip_pending=True)  # polling amb timeout per evitar col·lisions entre usuaris
@@ -30,3 +34,5 @@ if __name__ == "__main__":
         print(error)
         bot.send_message(ADMIN_ID, error)
         time.sleep(5)  # comprova missatges per sempre
+    finally:
+        scheduler.shutdown()
