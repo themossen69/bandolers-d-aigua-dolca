@@ -3,8 +3,9 @@ Comandes disponibles BANDOLER:
 /victima : mostra el nom, descripció i imatge de la teva víctima.
 /actualitzar_sobrenom : comanda per canviar-te el sobrenom (els altres jugadors et coneixeran amb aquest nom). Per defecte no se te'n assigna cap.
 /enxampar : prem aquesta comanda si has atrapat a la teva víctima.
-/control : utilitza la comanda quan vulguis registrar un control de bandolers.
-/ranquing_bandolers : mostra els bandolers amb més kills.
-/cementiri : mostra els noms o sobrenoms dels bandolers eliminats.
+/control : utilitza la comanda quan vulguis registrar un Control de Bandolers.
+/ranquing_bandolers : mostra els bandolers amb més punts.
+/cementiri : mostra els noms dels bandolers eliminats.
+/info_controls: mostra el calendari i les normes dels Controls de Bandolers.
 /regles_del_joc : explica les regles principals del joc.
 /comandes_disponibles: mostra les comandes que pots utilitzar.

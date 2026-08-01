@@ -25,7 +25,7 @@ Tens bona punteria? Et mous com un ninja pels carrers del poble? Doncs aquest é
         - Fent Controls de Bandolers: +1 punt pel primer control del dia i +2 punts per cada control extra (d'aquell mateix dia).
 
 <b>CONTROL DE BANDOLERS</b>
-    Per assegurar que tots els jugadors sou al poble durant la Festa Major, haureu de participar al Control de Bandolers: cada dia hi haurà diverssos reptes fotogràfics i haureu d’enviar la vostra fotodins l'horari establert amb la comanda /control (disponible al començar el joc).
+    Per assegurar que tots els jugadors sou al poble durant la Festa Major, haureu de participar al Control de Bandolers: cada dia hi haurà diverssos reptes fotogràfics i haureu d’enviar la vostra foto dins l'horari establert amb la comanda /control (disponible al començar el joc).
     En aquestes fotos és necessari que es vegi clarament que sou vosaltres i la zona que especifica aquell control.
 
     📌 Cal fer com a mínim 1 foto CADA DIA de la FM per seguir en joc (excepte el primer dia que no és obligatori).

@@ -425,7 +425,7 @@ def deny_kill(message) -> None:
         bot.send_message(id_victima, msg_victima)
 
 
-@bot.message_handler(commands=['ranquing_bandolers']) # TODO: ranquing per punts i kills
+@bot.message_handler(commands=['ranquing_bandolers'])
 @telegram_safe
 def bandolers_rank(message):
     if f.execute_db(f.get_inscripcio_disponible):
@@ -437,12 +437,12 @@ def bandolers_rank(message):
         bot.send_message(message.chat.id, "Encara no hi ha hagut cap kill.")
         return
 
-    msg = "Ranquing de bandolers amb més kills:\n\n"
+    msg = "Ranquing de bandolers amb més punts:\n\n"
     for i, bandoler in enumerate(ranquing):
         if bandoler[1] != '':
-            msg += f"{i+1}. {bandoler[1]}: {bandoler[2]} kills\n"
+            msg += f"{i+1}. {bandoler[1]}: {bandoler[2]} punts ({bandoler[3]} kills)\n"
         else:
-            msg += f"{i+1}. {bandoler[0]}: {bandoler[2]} kills\n"
+            msg += f"{i+1}. {bandoler[0]}: {bandoler[2]} punts ({bandoler[3]} kills)\n"
     bot.send_message(message.chat.id, msg)
 
 @bot.message_handler(commands=['cementiri'])
@@ -456,18 +456,6 @@ def cementiri(message):
         name_user = f.execute_db(f.name_or_surname, id)
         msg += f"{i+1}. {name_user}\n"
     bot.send_message(message.chat.id, msg)
-
-@bot.message_handler(commands=['assignar_victimes']) #TODO: Si scheduler ==> eliminar comanda
-@telegram_safe
-def assignar_victimes(message) -> None:
-    if not f.is_admin(message):
-        bot.send_message(message.chat.id, "No tens permisos per executar aquesta comanda.")
-        return
-
-    f.execute_db(f.assign_victims_cyclic, timeout=20)
-    msg_admin = "S'han assignat les víctimes de manera cíclica.\n\n"
-    msg_admin += "Per veure el cicle prem /cicle_bandolers."
-    bot.send_message(ADMIN_ID, msg_admin)
 
 @bot.message_handler(commands=['kill_bot'])
 @telegram_safe
@@ -519,7 +507,7 @@ def tancar_inscripcions(message) -> None:
         bot.send_message(ADMIN_ID, msg)
         
 
-@bot.message_handler(commands=['obrir_inscripcions']) # TODO: Si scheduler ==> eliminar comanda
+@bot.message_handler(commands=['obrir_inscripcions']) 
 @telegram_safe
 def obrir_inscripcions(message) -> None:
     if f.is_admin(message):
@@ -826,22 +814,6 @@ def delete_user2(message) -> None:
     else:
         bot.send_message(ADMIN_ID, "Operació cancel·lada")
 
-@bot.message_handler(commands=['comencar_joc']) # TODO: Si scheduler ==> eliminar comanda
-@telegram_safe
-def començar_joc(message) -> None:
-    if f.is_admin(message):
-        f.execute_db(f.update_state_and_kills_2_start)
-        f.execute_db(f.set_winner, 0)  # Resetejar guanyador
-        # Tancar inscripcions
-        if f.execute_db(f.get_inscripcio_disponible):
-            f.execute_db(f.change_inscripcio_disponible)
-        # Assignar víctimes
-        assignar_victimes(message)
-        msg_admin = "S'han posat a tots els usuaris com a jugant amb 0 kills i s'han assignat les víctimes.\n/usuaris per veure els usuaris registrats.\n\n"
-        msg_admin += "El joc ha començat!"
-        bot.send_message(ADMIN_ID, msg_admin)
-        f.send_message_to_target('Tots els usuaris', f.file_content_2_string(f.get_path_messages("start.txt")), bot)
-
 @bot.message_handler(commands=['estat_bot'])
 @telegram_safe
 def estat_bot(message) -> None:
@@ -1079,8 +1051,8 @@ def handle_denied_control(message, user_id) -> None:
 @bot.message_handler(commands=['info_controls'])
 @telegram_safe
 def info_controls(message) -> None:
-    #TODO: mostrar informació sobre els controls programats
-    pass
+    msg = f.execute_db(f.file_content_2_string, f.get_path_messages("controls.txt"))
+    bot.send_message(message.chat.id, msg, parse_mode='HTML')
 
 @bot.message_handler(commands=['show_completed_controls'])
 @telegram_safe

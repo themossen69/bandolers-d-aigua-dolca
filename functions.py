@@ -88,6 +88,7 @@ def create_controls_DB(cursor, csv_file: str) -> None:
             cursor.execute("INSERT OR IGNORE INTO controls (id, inici, final, dia) VALUES (?, ?, ?, ?)", (control_id, inici, final, dia))
 
 def create_controls_bandolers_DB(cursor) -> None:
+    cursor.execute("DROP TABLE IF EXISTS controls_bandolers")
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS controls_bandolers (
         id_control TEXT,
@@ -101,6 +102,8 @@ def create_controls_bandolers_DB(cursor) -> None:
 
 def restart_db(cursor: sqlite3.Cursor) -> None:
     cursor.execute("DROP TABLE IF EXISTS bandolers")
+    cursor.execute("DROP TABLE IF EXISTS controls")
+    cursor.execute("DROP TABLE IF EXISTS controls_bandolers")
     cursor.connection.commit()
     create_DB(cursor)  # Re-crea la base de dades després de reiniciar
     print("Base de dades reiniciada.")
@@ -236,8 +239,8 @@ def is_admin(message) -> bool:
 #     ranquing = cursor.fetchall()
 #     return list(ranquing)
 
-def ranquing_bandolers(cursor: sqlite3.Cursor):
-    cursor.execute("SELECT nom, sobrenom, kills FROM bandolers WHERE kills>0 ORDER BY kills DESC LIMIT 10")
+def ranquing_bandolers(cursor: sqlite3.Cursor) -> list:
+    cursor.execute("SELECT nom, sobrenom, punts, kills FROM bandolers WHERE punts>0 ORDER BY punts DESC, kills DESC LIMIT 10")
     ranquing = cursor.fetchall()
     return list(ranquing)
 
