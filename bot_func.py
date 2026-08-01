@@ -15,6 +15,7 @@ from telebot.types import InlineKeyboardMarkup
 from telebot.types import InlineKeyboardButton
 
 import functions as f
+from functions import telegram_safe
 
 private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private"))
 if private_path not in sys.path:
@@ -22,18 +23,6 @@ if private_path not in sys.path:
 from constants import TOKEN, ADMIN_ID
 
 bot: telebot.TeleBot = telebot.TeleBot(TOKEN)
-
-
-def telegram_safe(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            print(f"Error en executar {func.__name__}")
-            traceback.print_exc()
-
-    return wrapper
 
 # COMANDS
 @bot.message_handler(commands=['start'])
@@ -338,7 +327,7 @@ def enxampar(message):
         return
 
     if f.execute_db(f.get_inscripcio_disponible):
-        msg = "Les inscripcions estan obertes. No es pot enxampar ningú."
+        msg = "El joc no ha començat. No es pot enxampar a ningú."
         bot.send_message(message.chat.id, msg)
         return
 
@@ -393,7 +382,9 @@ def confirm_kill(message) -> None:
         name_bandoler = f.execute_db(f.name_or_surname, id_bandoler)
         name_victima = f.execute_db(f.name_or_surname, id_victima)
 
-        msg_bandoler = "S'ha confirmat la teva kill!\n"
+        msg_bandoler = "S'ha confirmat la teva kill! (+5 punts)\n"
+        f.execute_db(f.update, 'punts', id_bandoler, f.execute_db(f.get_points, id_bandoler) + 5)
+
         msg_participants = f"{name_bandoler} ha enxampat a {name_victima}! ACS🔫🕊"
 
         bot.send_message(id_bandoler, msg_bandoler)
@@ -407,7 +398,7 @@ def confirm_kill(message) -> None:
 
         # Comprovar que la victima no sigui ell mateix
         if id_bandoler == victima_victima:
-            winning_message(id_bandoler)
+            f.send_winning_message(bot, [id_bandoler])
 
         else:
             msg_bandoler = "S'ha actualitzat la teva víctima.\n"
@@ -433,43 +424,6 @@ def deny_kill(message) -> None:
         bot.send_message(id_bandoler, msg_bandoler)
         bot.send_message(id_victima, msg_victima)
 
-@telegram_safe
-def winning_message(id_winner: int) -> None:
-    """
-    Envia missatge de guanyador a tots els participants + el missatge de la Nyacapada.
-    """
-    f.execute_db(f.update, 'estat', id_winner, 'mort') # TODO: en un futur fer estat guanyador
-    f.execute_db(f.update, 'victima', id_winner, None)
-    f.execute_db(f.set_winner, id_winner)
-    msg_bandoler = "\n\nFELICITATS! Ets l'últim bandoler en joc!"
-    msg_bandoler += "\nEl @SheriffDeDosrius es posarà amb contacte amb tu per coordinar la teva recompensa!"
-    msg_bandoler += "\n\nGràcies per participar!"
-
-    name_winner = f.execute_db(f.name_or_surname, id_winner)
-    msg_participants = f"\n\nATENCIÓ: Tenim l'últim bandoler en joc, felicitats {name_winner}!!!"
-
-    # Enviar la foto de l'últim bandoler + missatge a tots els participants
-    picture_winner = f.execute_db(f.get_picture, id_winner)
-    for user_id in f.execute_db(f.get_all_users):
-        f.blob_to_image(picture_winner, bot, user_id, msg_participants)
-    f.blob_to_image(picture_winner, bot, ADMIN_ID, msg_participants)
-
-    bot.send_message(id_winner, msg_bandoler)
-
-    # msg_participants = "Anunciem els resultats de la Nyacapada:"
-    # msg_participants += f"\n\nEnhorabona {f.execute_db(f.get_nucli, id_winner).upper()}, heu guanyat 4 punts per tenir l'últim bandoler viu!"
-    # msg_participants += f"\n\nEnhorabona {f.execute_db(f.ranquing_nuclis)[0][0].upper()}, heu guanyat 4 punts per tenir la màxima participació al joc ({f.execute_db(f.ranquing_nuclis)[0][1]})!"
-    # msg_participants += "\n\nGràcies a tothom per participar! Ens veiem l'any que ve!"
-    # send_message_to_target('Tots els usuaris', msg_participants)
-    # bot.send_message(ADMIN_ID, msg_participants)
-
-# @bot.message_handler(commands=['ranquing_nuclis'])
-# def nuclis_rank(message):
-#     ranquing = f.execute_db(f.ranquing_nuclis)
-#     msg = "Ranquing de participants per nucli:\n\n"
-#     for i, nucli in enumerate(ranquing):
-#         msg += f"{i+1}. {nucli[0]}: {nucli[1]} participants\n"
-#     bot.send_message(message.chat.id, msg)
 
 @bot.message_handler(commands=['ranquing_bandolers']) # TODO: ranquing per punts i kills
 @telegram_safe
@@ -901,16 +855,6 @@ def estat_bot(message) -> None:
         msg += f"Usuaris pendents: {len(f.execute_db(f.get_all_pending))}\n"
         msg += f"Usuaris registrats correctament : {f.execute_db(f.comprobar_dades_usuaris, message, bot)}\n"
         bot.send_message(ADMIN_ID, msg)
-
-@bot.message_handler(commands=['send_automatic_winning_message'])
-@telegram_safe
-def send_winning_message(message) -> None:
-    if f.is_admin(message):
-        winner_id = f.execute_db(f.get_winner)
-        if winner_id is None:
-            bot.send_message(ADMIN_ID, "No hi ha cap guanyador.")
-        else:
-           winning_message(winner_id)
 
 @bot.message_handler(commands=['send_winning_message_given_id'])
 @telegram_safe

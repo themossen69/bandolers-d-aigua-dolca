@@ -6,6 +6,8 @@ import queue
 import sys
 import csv
 import time
+from functools import wraps
+import traceback
 
 private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private"))
 if private_path not in sys.path:
@@ -13,6 +15,16 @@ if private_path not in sys.path:
 
 from constants import ADMIN_ID, DB, QUEUE
 from const import BANDOLER_FIELD_NAMES
+
+def telegram_safe(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            print(f"Error en executar {func.__name__}")
+            traceback.print_exc()
+    return wrapper
 
 ###### funcions de gestió de la base de dades ######
 
@@ -438,10 +450,36 @@ def name_or_surname(cursor: sqlite3.Cursor, id: int) -> str:
         return names[1] if names[1] != '' else names[0]
     return None  # Retorna None si no hi ha cap nom o sobrenom
 
-def get_winner(cursor: sqlite3.Cursor) -> int:
-    cursor.execute("SELECT id FROM bandolers WHERE estat='jugant' and id = victima")
-    winner = cursor.fetchone()
-    return winner[0] if winner else None
+def get_winner(cursor: sqlite3.Cursor) -> list[int]:
+    cursor.execute(
+        """
+        WITH ranking AS (
+            SELECT
+                b.id,
+                b.punts,
+                b.kills,
+                COUNT(cb.id_control) AS n_controls
+            FROM bandolers b
+            LEFT JOIN controls_bandolers cb ON cb.id_bandoler = b.id
+            WHERE b.estat = 'jugant'
+            GROUP BY b.id, b.punts, b.kills
+        ), winner AS (
+            SELECT id, punts, kills, n_controls
+            FROM ranking
+            ORDER BY punts DESC, kills DESC, n_controls DESC
+            LIMIT 1
+        )
+        SELECT r.id
+        FROM ranking r
+        JOIN winner w
+          ON r.punts = w.punts
+         AND r.kills = w.kills
+         AND r.n_controls = w.n_controls
+        ORDER BY r.id
+        """
+    )
+    winners = [row[0] for row in cursor.fetchall()]
+    return winners
 
 def n_bandolers(cursor: sqlite3.Cursor) -> int:
     cursor.execute("SELECT COUNT(*) FROM bandolers WHERE estat!='mort'")
@@ -613,6 +651,41 @@ def send_message_to_target(target:str, text: str, bot) -> None:
 
     msg = f"Missatge enviat a {target}."
     bot.send_message(ADMIN_ID, msg)
+
+@telegram_safe
+def send_winning_message(bot, id_winners: list[int]) -> None:
+    """
+    Envia missatge de guanyador a tots els participants
+    """
+    for id_winner in id_winners:
+        execute_db(update, 'estat', id_winner, 'mort') # TODO: en un futur fer estat guanyador
+        execute_db(update, 'victima', id_winner, None)
+    # TODO: execute_db(set_winner, id_winner)
+    
+    name_winners = [execute_db(name_or_surname, id_winner) for id_winner in id_winners]
+    if len(id_winners) == 1:
+        msg_bandoler = "\n\nFELICITATS! Ets bandoler el bandoler guanyador!"
+        msg_bandoler += "\nEl @SheriffDeDosrius es posarà amb contacte amb tu per coordinar la teva recompensa!"
+        msg_bandoler += "\n\nGràcies per participar!"
+
+        msg_participants = f"\n\nATENCIÓ: Tenim l'últim bandoler guanyador, felicitats {name_winners[0]}!!!"
+
+    elif len(id_winners) > 1:
+        msg_bandoler = "\n\nFELICITATS! Ets un dels bandolers guanyadors, has quedat empatat amb altres bandolers!"
+        msg_bandoler += "\nEl @SheriffDeDosrius es posarà amb contacte amb tu i els altres per coordinar la vostra recompensa!"
+        msg_bandoler += "\n\nGràcies per participar!"
+
+        msg_participants = f"\n\nATENCIÓ: Tenim els bandolers guanyadors, felicitats {', '.join(name_winners)}!!!"
+
+    # Enviar la foto de l'últim bandoler + missatge a tots els participants
+    picture_winners = [execute_db(get_picture, id_winner) for id_winner in id_winners]
+    for user_id in execute_db(get_all_users)+ADMIN_ID:
+        for picture_winner in picture_winners:
+            blob_to_image(picture_winner, bot, user_id, msg_participants)
+
+    for id_winner in id_winners:
+        bot.send_message(id_winner, msg_bandoler)
+
 
 if __name__ == "__main__":
     # print(file_content_2_string(get_path_comandes('inicials.txt')))

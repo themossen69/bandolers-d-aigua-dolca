@@ -1,7 +1,29 @@
 import time
 from datetime import datetime
-from scheduler.database import  get_users, get_users_with_no_control, get_users_with_no_control, get_users_with_no_day_controls, get_last_day_control, get_final_date_control, is_it_the_last_control_of_the_day
-from functions import data_strip, next_control_message, get_next_control, execute_db, get_inscripcio_disponible, change_inscripcio_disponible, set_winner, update_state_and_kills_2_start, assign_victims_cyclic, get_path_messages, file_content_2_string, send_message_to_target
+from scheduler.database import (
+    get_users,  
+    get_users_with_no_day_controls, 
+    get_final_date_control, 
+    is_it_the_last_control_of_the_day
+)
+
+from functions import (
+    data_strip, 
+    next_control_message, 
+    get_next_control, 
+    execute_db, 
+    get_inscripcio_disponible,
+    change_inscripcio_disponible, 
+    set_winner, 
+    update_state_and_kills_2_start, 
+    assign_victims_cyclic, 
+    get_path_messages, 
+    file_content_2_string, 
+    send_message_to_target, 
+    user_with_themselves_as_victim, 
+    send_winning_message,
+    get_winner
+)
 
 def get_control_id_from_task_name(task_name: str) -> str | None:
     """
@@ -105,9 +127,8 @@ def handle_task(bot, task_name, ADMIN_ID):
                 send_message_to_target('Tots els usuaris', file_content_2_string(get_path_messages("start.txt")), bot)
 
             case "acabar-joc":
-                # TODO: gestionar final del joc
-                if execute_db(user_with_themselves_as_victim):
-                    
+                winners = execute_db(get_winner)
+                send_winning_message(bot, winners)
 
 def get_last_job(scheduler):
     """
