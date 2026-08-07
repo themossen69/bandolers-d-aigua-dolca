@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from scheduler.database import (
-    get_users,  
+    get_bandolers, 
     get_users_with_no_day_controls, 
     get_final_date_control, 
     is_it_the_last_control_of_the_day
@@ -21,7 +21,6 @@ from functions import (
     file_content_2_string, 
     send_message_to_target, 
     kill_runaway,
-    user_with_themselves_as_victim, 
     send_winning_message,
     get_winner
 )
@@ -68,21 +67,23 @@ def handle_task(bot, task_name, ADMIN_ID):
         next_control = execute_db(get_next_control, control_id)
 
         bool_last_control = execute_db(is_it_the_last_control_of_the_day, control_id)
-        users_with_no_control = execute_db(get_users_with_no_day_controls, control_id)
-        users = [(user_id, not user_id in users_with_no_control) for user_id in execute_db(get_users)]
+        bool_final_control = False
+        users_with_no_day_controls = execute_db(get_users_with_no_day_controls, day)
+        users = [(user_id, not user_id in users_with_no_day_controls) for user_id in execute_db(get_bandolers)]
 
         if task_name.startswith("inici_control_"):
-            msg_list = [f"Comença el control {control_id.upper()}.\nEs pot completar fins a les {hour}:{minute} del {day}/{month}/{year}."]
+            msg_list = [f"Comença el control {control_id.upper()}📸.\nEs pot completar fins a les {hour}:{minute} del {day}/{month}/{year}.\nPrem /control per fer-lo!"]
             
             if bool_last_control:
                 msg_list.append("Avís: És l'últim control del dia, si no el fas, quedaràs declarat fugitiu i seràs eliminat del joc.")
 
         elif task_name.startswith("final_control_"):
+            bool_final_control = True
             msg_list = [f"El control {control_id.upper()} ha finalitzat."]
             if bool_last_control:
                 msg_list = ["L'últim control del dia ha finalitzat."]
                 msg_list.append("ATENCIÓ: No has fet cap control del dia, ets declarat fugitiu. Gràcies per participar!")
-            
+
             if next_control:
                 msg_list[0] += next_control_message(next_control["inici"], next_control["final"])
 
@@ -90,12 +91,13 @@ def handle_task(bot, task_name, ADMIN_ID):
             try:
                 if has_day_controls:
                     bot.send_message(user_id, msg_list[0])
-                else:
-                    kill_runaway(bot, user_id)
+                else:  
                     bot.send_message(user_id, "\n".join(msg_list))
+                    if bool_last_control and bool_final_control:
+                        kill_runaway(bot, user_id)
                 time.sleep(0.05)  # Petita pausa per evitar problemes amb l'enviament massiu
             except Exception as e:
-                error_msg = f"Error enviant missatge d'inici de control a l'usuari {user_id}: {e}"
+                error_msg = f"Error enviant missatge de {task_name} a l'usuari {user_id}: {e}"
                 print(error_msg)
                 bot.send_message(ADMIN_ID, error_msg)
 
@@ -128,8 +130,9 @@ def handle_task(bot, task_name, ADMIN_ID):
                 send_message_to_target('Tots els usuaris', file_content_2_string(get_path_messages("start.txt")), bot)
 
             case "acabar-joc":
-                winners = execute_db(get_winner)
-                send_winning_message(bot, winners)
+                if execute_db(get_winner) is None:  
+                    winners = execute_db(get_winner)
+                    send_winning_message(bot, winners)
 
 def get_last_job(scheduler):
     """

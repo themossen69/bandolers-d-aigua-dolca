@@ -33,11 +33,11 @@ def get_final_controls(cursor: sqlite3.Cursor) -> list[tuple[str, str]]:
     result = cursor.fetchall()
     return [(f"final_control_{row[0]}", row[1]) for row in result] if result else []
 
-def get_users(cursor: sqlite3.Cursor) -> list[int]:
+def get_bandolers(cursor: sqlite3.Cursor) -> list[int]:
     """
     Retorna una llista amb els IDs d'usuari de tots els usuaris
     """
-    cursor.execute("SELECT id FROM bandolers")
+    cursor.execute("SELECT id FROM bandolers WHERE estat = 'jugant'")
     result = cursor.fetchall()
     return [row[0] for row in result] if result else []
 

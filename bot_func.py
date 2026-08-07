@@ -192,10 +192,14 @@ def instagram_permission(dicc_user: dict, message) -> None:
         bot.send_message(message.chat.id, msg)
         return
 
+    if not f.execute_db(f.get_inscripcio_disponible):
+        msg = "Les incripcions ja no estan disponibles, el joc ha començat.\nOperació cancel·lada."
+        bot.send_message(message.chat.id, msg)
+        return
+
     msg = "Inscripció registrada correctament!\n\n"
     msg += "Per veure el teu perfil prem /perfil.\n"
     msg += "Per veure les comandes disponibles prem /comandes_disponibles.\n"
-    # msg += "Si vols pots posar-te un sobrenom. Prem /actualitzar_sobrenom per canviar-lo.\n"
     bot.send_message(message.chat.id, msg)
     
 
@@ -216,11 +220,17 @@ def user_and_victim(cursor: sqlite3.Cursor, id_bandoler: int) -> tuple:
 @bot.message_handler(commands=['victima'])
 @telegram_safe
 def show_victim_profile(message):
+    if f.execute_db(f.get_inscripcio_disponible):
+        if not f.execute_db(f.id_in_db, message.from_user.id):
+            bot.send_message(message.chat.id, f.missatge_no_inscrits())
+            return
+        else:
+            msg = "El joc no ha començat. No tens víctima assignada."
+            bot.send_message(message.chat.id, msg)
+            return  
+
     if f.execute_db(f.id_in_db, message.from_user.id):
         user, bandoler = f.execute_db(user_and_victim, message.from_user.id)
-        if user is None or bandoler is None:
-            bot.send_message(message.chat.id, "No s'ha pogut obtenir la informació de l'usuari o la víctima.")
-            return
         if user[f.key2index('estat')] == 'jugant':
             # bandoler = f.get_user(user[f.key2index('victima')])
             if bandoler:
@@ -244,8 +254,8 @@ def show_victim_profile(message):
             msg += "Però no et preocupis, l'any que ve tornaràs a jugar!"
             bot.send_message(message.chat.id, msg)
     else:
-        msg = f.missatge_no_inscrits()
-        bot.send_message(message.chat.id, msg)
+        bot.send_message(message.chat.id, f.missatge_no_inscrits())
+        return  
 
 @bot.message_handler(commands=['perfil'])
 @telegram_safe
@@ -264,25 +274,7 @@ def show_profile(message):
     msg += "Kills: " + str(user[f.key2index('kills')]) + "\n"
     msg += "Punts: " + str(user[f.key2index('punts')]) + "\n"
 
-    f.blob_to_image(user[f.key2index('foto')], bot, message.chat.id, msg)
-
-
-# @bot.message_handler(commands=['actualitzar_sobrenom'])
-# def update_alias(message):
-#     if f.execute_db(f.id_in_db, message.from_user.id):
-#         msg = "Introdueix el sobrenom que vulguis posar-te:\n"
-#         bot.send_message(message.chat.id, msg)
-#         bot.register_next_step_handler(message, check_alias)
-#     else:
-#         bot.send_message(message.chat.id, f.missatge_no_inscrits())
-
-# def check_alias(message):
-#     alias = message.text
-#     f.execute_db(f.update, 'sobrenom', message.from_user.id, alias)
-#     msg = "Sobrenom actualitzat correctament!\n"
-#     msg += "Per veure el teu perfil prem /perfil.\n"
-#     msg += "Per veure les comandes disponibles prem /comandes_disponibles.\n"
-#     bot.send_message(message.chat.id, msg)    
+    f.blob_to_image(user[f.key2index('foto')], bot, message.chat.id, msg)  
 
 @telegram_safe
 def id_state_names(cursor: sqlite3.Cursor, id_bandoler: int) -> tuple:
@@ -354,7 +346,7 @@ def confirm_kill(message) -> None:
         bot.send_message(message.chat.id, msg)
     else:
         id_victima = message.from_user.id
-        id_bandoler = f.execute_db(f.killer, id_victima)
+        id_bandoler = f.execute_db(f.get_killer, id_victima)
 
         victima_victima = f.execute_db(f.get_victim, id_victima)
 
@@ -400,7 +392,7 @@ def deny_kill(message) -> None:
         bot.send_message(message.chat.id, msg)
     else:
         id_victima = message.from_user.id
-        id_bandoler = f.execute_db(f.killer, id_victima)
+        id_bandoler = f.execute_db(f.get_killer, id_victima)
 
         f.execute_db(f.update, 'estat', id_victima, 'jugant') 
         msg_bandoler = "Mort no confirmada. No juguis amb foc!"
@@ -418,7 +410,7 @@ def bandolers_rank(message):
     ranquing = f.execute_db(f.ranquing_bandolers)
 
     if len(ranquing) == 0:
-        bot.send_message(message.chat.id, "Encara no hi ha hagut cap kill.")
+        bot.send_message(message.chat.id, "Ningú te punts (encara).")
         return
 
     msg = "Ranquing de bandolers amb més punts:\n\n"
@@ -715,7 +707,7 @@ def select_victima(message, user_name) -> None:
                 motive = f"{name_user} ha estat declarat fugitiu per no presentar-se al mínim nombre de Control de Bandolers. El Sheriff l'ha declarat mort! ACS🔫🕊"
 
             name_user = f.execute_db(f.name_or_surname, id_user)
-            killer = f.execute_db(f.killer, id_user)
+            killer = f.execute_db(f.get_killer, id_user)
             f.execute_db(f.kill, id_user)
 
             f.send_message_to_target('Tots els usuaris', motive, bot)
@@ -731,7 +723,7 @@ def select_victima(message, user_name) -> None:
             victima = f.execute_db(f.get_victim, killer)
             # print(f"user: {id_user}, killer: {killer}, victima de killer: {victima}")
             if victima == killer:
-                winning_message(killer)
+                f.send_winning_message(bot, [killer])
             else:
                 msg_killer = f"La teva víctima ha estat actualitzada. Pots veure la seva informació prement /victima."
                 bot.send_message(killer, msg_killer)
@@ -803,7 +795,10 @@ def delete_user2(message) -> None:
 def estat_bot(message) -> None:
     if f.is_admin(message):
         msg = "Estat del bot:\n"
-        msg += f"Inscripcions disponibles: {f.execute_db(f.get_inscripcio_disponible)}\n"
+        inscripcio_disponible = f.execute_db(f.get_inscripcio_disponible)
+        msg += f"Inscripcions disponibles: {inscripcio_disponible}\n"
+        if not inscripcio_disponible:
+            msg += "/obrir_inscripcions per obrir-les\n"
         msg += f"Guanyador: {f.execute_db(f.get_winner_from_var)}\n"
         msg += f"Usuaris registrats: {len(f.execute_db(f.get_all_users))}\n"
         msg += f"Usuaris jugant: {len(f.execute_db(f.get_all_bandolers))}\n"
@@ -892,15 +887,15 @@ def edit_profile3(message, field):
                 msg = "El text no pot contenir el caràcter '/' . Operació cancel·lada."
                 bot.send_message(message.chat.id, msg)
                 return
+            if value.strip() == '':
+                msg = f"El camp {field} no pot estar buit. Operació cancel·lada."
+                bot.send_message(message.chat.id, msg)
+                return
             f.execute_db(f.update, field, message.from_user.id, value)
             msg = f"Camp {field} actualitzat correctament!\n"
             msg += "Per veure el teu perfil prem /perfil.\n"
             bot.send_message(message.chat.id, msg)
-        # case 'nucli':
-        #     if value not in ['Dosrius', 'Canyamars', 'Can Massuet']:
-        #         msg = "El nucli ha de ser 'Dosrius', 'Canyamars' o 'Can Massuet'. Operació cancel·lada."
-        #         bot.send_message(message.chat.id, msg)
-        #         return
+
         case 'foto':
             if message.content_type == 'photo':  # Comprova si el missatge conté una foto
                 file_id = message.photo[-1].file_id  # L'últim element té la millor qualitat
@@ -917,7 +912,7 @@ def edit_profile3(message, field):
                 msg = "Format incorrecte. Operació cancel·lada."
                 bot.send_message(message.chat.id, msg)
         case _:
-            msg = "Operació cancel·lada."
+            msg = "Opció no vàlida. Operació cancel·lada."
             bot.send_message(message.chat.id, msg)
 
 @bot.message_handler(commands=['control'])
@@ -933,7 +928,7 @@ def start_control(message) -> None:
         return
 
     if f.execute_db(f.get_state, message.from_user.id) != 'jugant':
-        msg = "No pots passar el control perquè no estàs jugant.\nPrem /comandes_disponibles per veure les comandes que pots utilitzar"
+        msg = "Comanda no disponible.\nPrem /comandes_disponibles per veure les que pots utilitzar"
         bot.send_message(message.chat.id, msg)
         return
     
@@ -943,9 +938,6 @@ def start_control(message) -> None:
     data_dict['timestamp'] = datetime.fromtimestamp(message.date, tz=timezone).strftime("%Y-%m-%d %H:%M:%S")
     data_dict['id_user'] = message.from_user.id
     data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
-    print(f"Control: {data_dict['id_control']}")
-    print(f"Timestamp: {data_dict['timestamp']}")
-    
 
     if data_dict['id_control'] is None:
         msg = "No hi ha cap control actiu en aquest moment.\n"
@@ -1035,7 +1027,7 @@ def handle_denied_control(message, user_id) -> None:
 @bot.message_handler(commands=['info_controls'])
 @telegram_safe
 def info_controls(message) -> None:
-    msg = f.execute_db(f.file_content_2_string, f.get_path_messages("controls.txt"))
+    msg = f.file_content_2_string(f.get_path_messages("controls.txt"))
     bot.send_message(message.chat.id, msg, parse_mode='HTML')
 
 @bot.message_handler(commands=['show_completed_controls'])
@@ -1054,3 +1046,16 @@ def show_completed_controls(message) -> None:
         msg += f"{user_name} ({user_id}), {control_id}, {timestamp}\n"
 
     bot.send_message(ADMIN_ID, msg)
+
+
+@bot.message_handler(func=lambda message: True)
+def default_response(message):
+    if not f.execute_db(f.id_in_db, message.from_user.id):
+        msg = "Em sap greu, no he entès el que m'has dit. 😅\n\n"
+        bot.send_message(message.chat.id, msg + f.missatge_no_inscrits())
+        return
+    if f.execute_db(f.get_inscripcio_disponible):
+        msg = "Em sap greu, no he entès el que m'has dit. 😅\n\n"
+        msg += "Utilitza la comanda /comandes_disponibles per veure què pots fer."
+        bot.send_message(message.chat.id, msg)
+        return

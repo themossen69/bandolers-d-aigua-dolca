@@ -2,6 +2,5 @@ Comandes disponibles ENXAMPATS:
 /perfil : mostra les teves dades del joc.
 /ranquing_bandolers : mostra els bandolers amb més punts.
 /cementiri : mostra els noms dels bandolers eliminats.
-/info_controls: mostra el calendari i les normes dels Controls de Bandolers.
 /regles_del_joc : explica les regles principals del joc.
 /comandes_disponibles: mostra les comandes que pots utilitzar.
