@@ -41,29 +41,6 @@ def get_bandolers(cursor: sqlite3.Cursor) -> list[int]:
     result = cursor.fetchall()
     return [row[0] for row in result] if result else []
 
-def get_users_with_no_control(cursor: sqlite3.Cursor, control_id: str) -> list[int]:
-    """
-    Retorna una llista amb els IDs d'usuari de tots els usuaris que no han fet el control especificat
-    """
-    cursor.execute("SELECT id FROM bandolers EXCEPT SELECT id_bandoler FROM controls_bandolers WHERE id_control = ?", (control_id,))
-    result = cursor.fetchall()
-    return [row[0] for row in result] if result else []
-
-def get_users_with_no_day_controls(cursor: sqlite3.Cursor, dia: int) -> list[int]:
-    """
-    Retorna una llista amb els IDs d'usuari de tots els usuaris que no tenen controls assignats per al dia especificat
-    """
-    query = """
-    SELECT id FROM bandolers
-    EXCEPT
-    SELECT DISTINCT id_bandoler FROM controls_bandolers WHERE id_control IN (
-        SELECT id FROM controls WHERE dia = ?
-    )
-    """
-    cursor.execute(query, (dia,))
-    result = cursor.fetchall()
-    return [row[0] for row in result] if result else []
-
 def get_last_day_control(cursor: sqlite3.Cursor, dia: int) -> str:
     """
     Retorna l'id de l'últim control assignat al dia especificat.

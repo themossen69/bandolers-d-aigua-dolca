@@ -228,6 +228,10 @@ def show_victim_profile(message):
             msg = "El joc no ha començat. No tens víctima assignada."
             bot.send_message(message.chat.id, msg)
             return  
+    if f.execute_db(f.get_winner_from_var) is not None:
+        msg = "El joc ja ha acabat. No tens víctima assignada."
+        bot.send_message(message.chat.id, msg)
+        return
 
     if f.execute_db(f.id_in_db, message.from_user.id):
         user, bandoler = f.execute_db(user_and_victim, message.from_user.id)
@@ -269,10 +273,11 @@ def show_profile(message):
     if f.execute_db(f.get_inscripcio_disponible) and user[f.key2index('sobrenom')] == '':
         msg += "(Per posar-te sobrenom prem /editar_perfil i seguidament prem el botó corresponent.)\n"
     msg += "Descripció: " + user[f.key2index('descripcio')] + "\n"
-    # msg += "Nucli: " + user[f.key2index('nucli')] + "\n"
-    msg += "Estat: " + user[f.key2index('estat')] + "\n"
-    msg += "Kills: " + str(user[f.key2index('kills')]) + "\n"
-    msg += "Punts: " + str(user[f.key2index('punts')]) + "\n"
+    if f.execute_db(f.get_inscripcio_disponible):
+        msg += "Estat: " + user[f.key2index('estat')] + "\n"
+        msg += "Punts: " + str(user[f.key2index('punts')]) + "\n"
+        msg += "Kills: " + str(user[f.key2index('kills')]) + "\n"
+        msg += f"Nº de controls fets: {len(f.execute_db(f.get_user_controls, message.from_user.id))}\n"
 
     f.blob_to_image(user[f.key2index('foto')], bot, message.chat.id, msg)  
 
@@ -295,10 +300,22 @@ def enxampar(message):
     if not f.execute_db(f.id_in_db, message.from_user.id):
         bot.send_message(message.chat.id, f.missatge_no_inscrits())
         return 
-    state = f.execute_db(f.get_state, message.from_user.id)
-    if state != 'jugant':
-        msg = f"No pots enxampar ningú perquè estas en estat {state}."
-        msg += "Prem /comandes_disponibles per veure les comandes que tens disponibles segons el teu estat."
+
+    if f.execute_db(f.get_winner_from_var) is None:
+        state = f.execute_db(f.get_state, message.from_user.id)
+        if state == 'pendent':
+            msg = f"No pots enxampar ningú perquè has de confirmar si t'han enxampat."
+            msg += "\nPrem /comandes_disponibles per veure les comandes que pots fer."
+            bot.send_message(message.chat.id, msg)
+            return
+            
+        elif state == 'mort':
+            msg = f"Comanda no disponible."
+            msg += "\nPrem /comandes_disponibles per veure les comandes que pots fer."
+            bot.send_message(message.chat.id, msg)
+            return
+    else:
+        msg = "El joc ja ha acabat. No pots enxampar ningú."
         bot.send_message(message.chat.id, msg)
         return
 
@@ -332,7 +349,7 @@ def updates_confirm(cursor: sqlite3.Cursor, id_bandoler: int, id_victima: int, v
     f.update(cursor, 'victima', id_bandoler, victima_victima)
     f.update(cursor, 'victima', id_victima, 0)
     f.update(cursor, 'kills', id_bandoler, kills + 1)
-    f.update(cursor, 'punts', id_bandoler, points + 1)
+    f.update(cursor, 'punts', id_bandoler, points)
 
 @bot.message_handler(commands=['confirmar'])
 @telegram_safe
@@ -840,7 +857,7 @@ def confirm_winner(message, user_id) -> None:
     if f.is_admin(message):
         if message.text == 'Sí':
             bot.send_message(ADMIN_ID, "Enviant missatge de guanyador...")
-            winning_message(user_id)
+            f.send_winning_message(user_id)
         else:
             bot.send_message(ADMIN_ID, "Operació cancel·lada.")
 

@@ -8,6 +8,7 @@ import csv
 import time
 from functools import wraps
 import traceback
+from datetime import date
 
 private_path = os.path.abspath(os.path.join(os.getcwd(), "..", "_private"))
 if private_path not in sys.path:
@@ -30,6 +31,7 @@ def telegram_safe(func):
 
 def create_DB(cursor) -> None:
     # Crear la taula "bandolers" amb relació recursiva
+    cursor.execute("DROP TABLE IF EXISTS bandolers")
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bandolers (
         id INTEGER PRIMARY KEY,
@@ -112,24 +114,36 @@ def change_inscripcio_disponible(cursor: sqlite3.Cursor) -> None:
     valor = get_inscripcio_disponible(cursor)
     cursor.execute("UPDATE variables SET valor=? WHERE nom='inscripcio_disponible'", (str(not valor),))
 
-def execute_db(func, *args: tuple, timeout=5):
+def execute_db(func, *args: tuple, timeout=15):
     results_queue = queue.Queue() # Crea una cua per emmagatzemar els resultats
     QUEUE.put((func, args, results_queue))  # Afegeix la funció i els arguments a la cua
     try:
-        return results_queue.get(timeout=timeout)  # Espera i retorna el resultat de la funció
+        result = results_queue.get(timeout=timeout)  # Espera i retorna el resultat de la funció
+        if isinstance(result, Exception):
+            raise result  # Si el resultat és una excepció, la llencem
+        return result
+    
     except queue.Empty:
-        print("Operació de BD caducada")
+        print(f"Timeout: La funció {func.__name__} ha trigat més de {timeout}s.")
+        return None
 
 def db_worker():
-    conn = sqlite3.connect(get_path_db(), check_same_thread=False, timeout=10) # TODO: troban nº adequat
-    cursor = conn.cursor()
+    try:
+        conn = sqlite3.connect(get_path_db(), check_same_thread=False, timeout=10) # TODO: troban nº adequat
+        cursor = conn.cursor()
 
-    create_DB(cursor)  # Assegura que la base de dades està creada abans de començar a processar esdeveniments
-    conn.commit()
+        create_DB(cursor)  # Assegura que la base de dades està creada abans de començar a processar esdeveniments
+        conn.commit()
 
+    except Exception as e:
+        print(f"Error a l'iniciar el Worker de BD: {e}")
+        return
+    
     while True:
-        func, args, results_queue = QUEUE.get()
+        task = QUEUE.get()
+        func, args, results_queue = task
         if func is None:  # Si la funció és None, sortim del bucle
+            QUEUE.task_done()
             break
         try:
             result = func(cursor, *args)  # Executa la funció amb el cursor i els arguments
@@ -139,6 +153,8 @@ def db_worker():
             conn.rollback()  # Si hi ha un error, desfem els canvis
             print(f"Error en executar la funció {func.__name__}: {e}")
             results_queue.put(e)
+        finally:
+            QUEUE.task_done()  # Marca la tasca com a completada
     
     cursor.close()
     conn.close()
@@ -222,6 +238,11 @@ def get_all_users(cursor: sqlite3.Cursor) -> list:
     users = cursor.fetchall()
     return [u[0] for u in users]  # Retorna una llista d'ids dels usuaris
 
+def get_playing_users(cursor: sqlite3.Cursor) -> list:
+    cursor.execute("SELECT id FROM bandolers WHERE estat!='mort'")
+    playing_users = cursor.fetchall()
+    return [u[0] for u in playing_users]  # Retorna una llista d'ids dels usuaris jugant
+
 def blob_to_image(blob: bytes, bot, id_reciever, msg) -> str:
     img_stream = io.BytesIO(blob)
     img_stream.seek(0)  # Assegura que comencem a llegir des del principi
@@ -301,13 +322,13 @@ def text_cycle(cursor: sqlite3.Cursor) -> str:
             text += f"{i+1}. {user} --> {next_user}\n"
     return text.strip()
 
-def killer(cursor: sqlite3.Cursor, id: int) -> int: # retorna l'id del bandoler que ha de matar a l'usuari amb id id
+def get_killer(cursor: sqlite3.Cursor, id: int) -> int: # retorna l'id del bandoler que ha de matar a l'usuari amb id id
     cursor.execute(f"SELECT * FROM bandolers WHERE victima={id}")
     bandoler = cursor.fetchone()
     return bandoler[0] if bandoler else None  # Retorna l'id del bandoler que ha de matar
 
 def kill(cursor: sqlite3.Cursor, id_mort: int) -> None:
-    id_bandoler = killer(cursor, id_mort)  # Obtenim el bandoler que ha de matar
+    id_bandoler = get_killer(cursor, id_mort)  # Obtenim el bandoler que ha de matar
     if id_bandoler:
         new_victim = get_victim(cursor, id_mort)
         update(cursor, 'victima', id_bandoler, new_victim)
@@ -482,7 +503,8 @@ def get_winner(cursor: sqlite3.Cursor) -> list[int]:
         """
     )
     winners = [row[0] for row in cursor.fetchall()]
-    return winners
+
+    return winners if len(winners) > 0 else None
 
 def n_bandolers(cursor: sqlite3.Cursor) -> int:
     cursor.execute("SELECT COUNT(*) FROM bandolers WHERE estat!='mort'")
@@ -490,9 +512,10 @@ def n_bandolers(cursor: sqlite3.Cursor) -> int:
     return count[0] if count else 0
 
 def get_winner_from_var(cursor: sqlite3.Cursor) -> int:
+    # val 1 si s'ha acabat el joc i no hi ha gunayador
     cursor.execute("SELECT valor FROM variables WHERE nom='guanyador'")
     winner = cursor.fetchone()
-    if winner and winner[0] != '0':
+    if winner and winner[0] != '0' and winner[0] != 'None':
         return int(winner[0])
     else:
         return None
@@ -629,7 +652,7 @@ def comencar_joc(cursor: sqlite3.Cursor, bot) -> None:
     msg_admin = "S'han posat a tots els usuaris com a jugant amb 0 kills i s'han assignat les víctimes.\n/usuaris per veure els usuaris registrats.\n\n"
     msg_admin += "El joc ha començat!"
     bot.send_message(ADMIN_ID, msg_admin)
-    send_message_to_target('Tots els usuaris', f.file_content_2_string(f.get_path_messages("start.txt")))
+    send_message_to_target('Tots els usuaris', file_content_2_string(get_path_messages("start.txt")), bot)
 
 def send_message_to_target(target:str, text: str, bot) -> None:
     match target:
@@ -660,18 +683,24 @@ def send_winning_message(bot, id_winners: list[int]) -> None:
     """
     Envia missatge de guanyador a tots els participants
     """
+    execute_db(set_winner, id_winners[0])
     for id_winner in id_winners:
         execute_db(update, 'estat', id_winner, 'mort') # TODO: en un futur fer estat guanyador
         execute_db(update, 'victima', id_winner, None)
-    # TODO: execute_db(set_winner, id_winner)
     
     name_winners = [execute_db(name_or_surname, id_winner) for id_winner in id_winners]
+    kills = execute_db(get_kills, id_winners[0])
+    punts = execute_db(get_points, id_winners[0])
+    n_controls = len(execute_db(get_user_controls, id_winners[0]))
     if len(id_winners) == 1:
         msg_bandoler = "\n\nFELICITATS! Ets bandoler el bandoler guanyador!"
+        msg_bandoler += f"\nHas aconseguit {punts} punts fent {kills} kills i {n_controls} controls de bandolers."
         msg_bandoler += "\nEl @SheriffDeDosrius es posarà amb contacte amb tu per coordinar la teva recompensa!"
         msg_bandoler += "\n\nGràcies per participar!"
 
-        msg_participants = f"\n\nATENCIÓ: Tenim l'últim bandoler guanyador, felicitats {name_winners[0]}!!!"
+        msg_participants = f"\n\nATENCIÓ: Tenim bandoler guanyador, felicitats {name_winners[0]}🤠!!!"
+        msg_participants += f"\nQue ha aconseguit {punts} punts fent {kills} kills i {n_controls} controls de bandolers."
+        msg_participants += "\nGràcies a tots per participar, esperem que us hagi agradat!"
 
     elif len(id_winners) > 1:
         msg_bandoler = "\n\nFELICITATS! Ets un dels bandolers guanyadors, has quedat empatat amb altres bandolers!"
@@ -679,42 +708,92 @@ def send_winning_message(bot, id_winners: list[int]) -> None:
         msg_bandoler += "\n\nGràcies per participar!"
 
         msg_participants = f"\n\nATENCIÓ: Tenim els bandolers guanyadors, felicitats {', '.join(name_winners)}!!!"
+        msg_participants += f"\nHan quedat empat fent {punts} punts amb {kills} kills i {n_controls} controls de bandolers."
+        msg_participants += "\nGràcies a tots per participar, esperem que us hagi agradat!"
 
     # Enviar la foto de l'últim bandoler + missatge a tots els participants
     picture_winners = [execute_db(get_picture, id_winner) for id_winner in id_winners]
-    for user_id in execute_db(get_all_users)+ADMIN_ID:
+    for user_id in execute_db(get_all_users)+[ADMIN_ID]:
         for picture_winner in picture_winners:
             blob_to_image(picture_winner, bot, user_id, msg_participants)
+        msg = "Si teniu algun comentari o suggeriment sobre el joc, no dubteu a enviar un missatge al @SheriffDeDosrius. \nEns encantaria escoltar la vostra opinió!"
+        bot.send_message(user_id, msg)
 
     for id_winner in id_winners:
         bot.send_message(id_winner, msg_bandoler)
 
-def kill_runaway(bot, id_user) -> None:
+def kill_runaway(bot, id_user, dia) -> None:
+    print(f"Executant kill_runaway per l'usuari amb ID {id_user}")
     name_user = execute_db(name_or_surname, id_user)
+    print(f"nom: {name_user}")
 
     motive = f"{name_user} ha estat declarat fugitiu per no presentar-se a cap Control de Bandolers del dia. El Sheriff l'ha declarat mort! ACS🔫🕊"
 
-    name_user = execute_db(name_or_surname, id_user)
-    killer = execute_db(killer, id_user)
+    killer = execute_db(get_killer, id_user)
+    print(f"killer: {killer}")
     execute_db(kill, id_user)
+    print(f"funció kill executada per l'usuari amb ID {id_user}.")
 
     send_message_to_target('Tots els usuaris', motive, bot)
     bot.send_message(ADMIN_ID, motive)
 
-    n_bandolers = execute_db(n_bandolers)
-    if n_bandolers > 1:
-        msg_participants = f"Queden {n_bandolers} bandolers en joc🏜"
-        send_message_to_target('Tots els usuaris', msg_participants, bot)
-        bot.send_message(ADMIN_ID, msg_participants)
+    num_bandolers = execute_db(n_bandolers)
+    print(f"n_bandolers: {num_bandolers}")
+    msg_participants = f"Queden {num_bandolers} bandolers en joc🏜"
+    send_message_to_target('Tots els usuaris', msg_participants, bot)
+    bot.send_message(ADMIN_ID, msg_participants)
 
     victima = execute_db(get_victim, killer)
+    print(f"victima: {victima}")
+    if victima is None:
+        send_message_to_target('Tots els usuaris', file_content_2_string(get_path_messages("case_everyone_loses.txt")), bot)
+        return
     # print(f"user: {id_user}, killer: {killer}, victima de killer: {victima}")
     if victima == killer:
+        if killer in execute_db(get_users_with_no_day_controls, dia):
+            execute_db(set_winner, 1)  # Resetejar guanyador
+            return
         send_winning_message(bot, [killer]) 
     else:
         msg_killer = f"La teva víctima ha estat actualitzada. Pots veure la seva informació prement /victima."
         bot.send_message(killer, msg_killer)
 
+def get_users_with_no_day_controls(cursor: sqlite3.Cursor, dia: int) -> list[int]:
+    """
+    Retorna una llista amb els IDs d'usuari de tots els usuaris que no tenen controls assignats per al dia especificat
+    """
+    query = """
+    SELECT id FROM bandolers
+    EXCEPT
+    SELECT DISTINCT id_bandoler FROM controls_bandolers WHERE id_control IN (
+        SELECT id FROM controls WHERE dia = ?
+    )
+    """
+    cursor.execute(query, (dia,))
+    result = cursor.fetchall()
+    return [row[0] for row in result] if result else []
+
+def get_users_with_no_control(cursor: sqlite3.Cursor, control_id: str) -> list[int]:
+    """
+    Retorna una llista amb els IDs d'usuari de tots els usuaris que no han fet el control especificat
+    """
+    cursor.execute("SELECT id FROM bandolers EXCEPT SELECT id_bandoler FROM controls_bandolers WHERE id_control = ?", (control_id,))
+    result = cursor.fetchall()
+    return [row[0] for row in result] if result else []
+
+def get_day_last_control_date(cursor: sqlite3.Cursor) -> int:
+    # retorna el dia de l'ultim control programat
+    cursor.execute("SELECT inici FROM controls ORDER BY inici DESC LIMIT 1")
+    result = cursor.fetchone()
+    return result[0] if result else None
+
+def get_day_last_control(cursor: sqlite3.Cursor) -> int:
+    _date = get_day_last_control_date(cursor)
+    if _date:
+        day, _, _, _, _, _ = data_strip(_date)
+        return int(day)
+    else:
+        return None
 
 if __name__ == "__main__":
     # print(file_content_2_string(get_path_comandes('inicials.txt')))
