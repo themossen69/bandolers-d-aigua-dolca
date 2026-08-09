@@ -1,6 +1,7 @@
 Comandes disponibles ADMIN:
 
 /obrir_inscripcions: Obre les inscripcions.
+/set_winner_2_none: posa none de guanyador
 /estat_bot: bool inscripcions_disponibles i usuaris ben registrats + nº d'usuaris a la bd.
 /restart_db : Deixa la db en blanc.
 /delete_user: Demana un id per eliminar les dades d'aquest de la bd.

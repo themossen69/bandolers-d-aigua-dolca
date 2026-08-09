@@ -1,0 +1,7 @@
+# Requirements for bot-bandolers
+# Python 3.9+ is recommended (uses zoneinfo)
+pyTelegramBotAPI>=4.12.0
+APScheduler>=3.10.1
+pandas>=1.5.3
+# Optional on some Windows installs to provide IANA timezone data for zoneinfo
+tzdata>=2023.6

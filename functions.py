@@ -707,7 +707,7 @@ def send_winning_message(bot, id_winners: list[int]) -> None:
         msg_bandoler += "\nEl @SheriffDeDosrius es posarà amb contacte amb tu i els altres per coordinar la vostra recompensa!"
         msg_bandoler += "\n\nGràcies per participar!"
 
-        msg_participants = f"\n\nATENCIÓ: Tenim els bandolers guanyadors, felicitats {', '.join(name_winners)}!!!"
+        msg_participants = f"\n\nATENCIÓ: Tenim els bandolers guanyadors, felicitats {', '.join(name_winners[:-1])} i {name_winners[-1]}!!!"
         msg_participants += f"\nHan quedat empat fent {punts} punts amb {kills} kills i {n_controls} controls de bandolers."
         msg_participants += "\nGràcies a tots per participar, esperem que us hagi agradat!"
 
@@ -715,7 +715,8 @@ def send_winning_message(bot, id_winners: list[int]) -> None:
     picture_winners = [execute_db(get_picture, id_winner) for id_winner in id_winners]
     for user_id in execute_db(get_all_users)+[ADMIN_ID]:
         for picture_winner in picture_winners:
-            blob_to_image(picture_winner, bot, user_id, msg_participants)
+            blob_to_image(picture_winner, bot, user_id, '')
+        bot.send_message(user_id, msg_participants)
         msg = "Si teniu algun comentari o suggeriment sobre el joc, no dubteu a enviar un missatge al @SheriffDeDosrius. \nEns encantaria escoltar la vostra opinió!"
         bot.send_message(user_id, msg)
 
@@ -794,8 +795,3 @@ def get_day_last_control(cursor: sqlite3.Cursor) -> int:
         return int(day)
     else:
         return None
-
-if __name__ == "__main__":
-    # print(file_content_2_string(get_path_comandes('inicials.txt')))
-    # print(f"cadena: {'holano'} -> {assert_no_bar('holano')}")
-    pass

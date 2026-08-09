@@ -273,7 +273,7 @@ def show_profile(message):
     if f.execute_db(f.get_inscripcio_disponible) and user[f.key2index('sobrenom')] == '':
         msg += "(Per posar-te sobrenom prem /editar_perfil i seguidament prem el botó corresponent.)\n"
     msg += "Descripció: " + user[f.key2index('descripcio')] + "\n"
-    if f.execute_db(f.get_inscripcio_disponible):
+    if not f.execute_db(f.get_inscripcio_disponible):
         msg += "Estat: " + user[f.key2index('estat')] + "\n"
         msg += "Punts: " + str(user[f.key2index('punts')]) + "\n"
         msg += "Kills: " + str(user[f.key2index('kills')]) + "\n"
@@ -816,7 +816,10 @@ def estat_bot(message) -> None:
         msg += f"Inscripcions disponibles: {inscripcio_disponible}\n"
         if not inscripcio_disponible:
             msg += "/obrir_inscripcions per obrir-les\n"
-        msg += f"Guanyador: {f.execute_db(f.get_winner_from_var)}\n"
+        guanyador = f.execute_db(f.get_winner_from_var)
+        msg += f"Guanyador: {guanyador}\n"
+        if guanyador is not None:
+            msg += f"/set_winner_2_none per reiniciar el guanyador\n"
         msg += f"Usuaris registrats: {len(f.execute_db(f.get_all_users))}\n"
         msg += f"Usuaris jugant: {len(f.execute_db(f.get_all_bandolers))}\n"
         msg += f"Usuaris enxampats: {len(f.execute_db(f.get_all_enxampats))}\n"
@@ -1063,6 +1066,14 @@ def show_completed_controls(message) -> None:
         msg += f"{user_name} ({user_id}), {control_id}, {timestamp}\n"
 
     bot.send_message(ADMIN_ID, msg)
+
+@bot.message_handler(commands=['set_winner_2_none'])
+@telegram_safe
+def set_winner_2_none(message) -> None:
+    if f.is_admin(message):
+        f.execute_db(f.set_winner, None)
+        msg = "S'ha reiniciat el guanyador a 'None'."
+        bot.send_message(ADMIN_ID, msg)
 
 
 @bot.message_handler(func=lambda message: True)

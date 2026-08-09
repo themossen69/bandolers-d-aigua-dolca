@@ -2,7 +2,6 @@
 Aquest fitxer fa les consultes a la base de dades.
 """
 
-from datetime import datetime
 import sqlite3
 import sys
 import os

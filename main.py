@@ -12,7 +12,8 @@ if private_path not in sys.path:
 from constants import ADMIN_ID
 
 from bot_func import bot
-from functions import create_DB, create_var_DB, create_controls_bandolers_DB, create_controls_DB, execute_db, db_worker, omplir_bandolers #TODO: eliminar omplir_bandolers
+from functions import create_DB, create_var_DB, create_controls_bandolers_DB, create_controls_DB, execute_db, db_worker 
+from omplir_dades_prova import omplir_bandolers
 
 worker_thread = threading.Thread(target=db_worker, daemon=True)
 worker_thread.start()
