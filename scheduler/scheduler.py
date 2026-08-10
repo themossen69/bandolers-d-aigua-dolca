@@ -9,7 +9,7 @@ from functions import execute_db
 def ini_scheduler(bot, ADMIN_ID):
     """Inicialitza el programador amb les hores guardades a la BD."""
     scheduler = BackgroundScheduler()
-    tasks = get_tasks("./scheduler/prova-horaris.csv")  # TODO: canviar a horaris.csv
+    tasks = get_tasks("./scheduler/horaris.csv")  
 
     # Programem una tasca per a cada horari trobat a la BD
     for task_id, task_name, scheduled_time in tasks:
