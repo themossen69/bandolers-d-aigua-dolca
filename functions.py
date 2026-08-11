@@ -31,7 +31,7 @@ def telegram_safe(func):
 
 def create_DB(cursor) -> None:
     # Crear la taula "bandolers" amb relació recursiva
-    cursor.execute("DROP TABLE IF EXISTS bandolers")
+    # cursor.execute("DROP TABLE IF EXISTS bandolers")
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bandolers (
         id INTEGER PRIMARY KEY,
@@ -71,7 +71,7 @@ def create_var_DB(cursor) -> None:
     """)
 
 def create_controls_DB(cursor, csv_file: str) -> None:
-    cursor.execute("DROP TABLE IF EXISTS controls")
+    # cursor.execute("DROP TABLE IF EXISTS controls")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS controls (
             id TEXT PRIMARY KEY,
@@ -90,7 +90,7 @@ def create_controls_DB(cursor, csv_file: str) -> None:
             cursor.execute("INSERT OR IGNORE INTO controls (id, inici, final, dia) VALUES (?, ?, ?, ?)", (control_id, inici, final, dia))
 
 def create_controls_bandolers_DB(cursor) -> None:
-    cursor.execute("DROP TABLE IF EXISTS controls_bandolers")
+    # cursor.execute("DROP TABLE IF EXISTS controls_bandolers")
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS controls_bandolers (
         id_control TEXT,
