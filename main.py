@@ -27,6 +27,9 @@ execute_db(create_controls_bandolers_DB)
 # MAIN
 if __name__ == "__main__":
     scheduler = ini_scheduler(bot, ADMIN_ID)
+    print("tasques en memòria:")
+    scheduler.print_jobs()
+    print()
     bot.send_message(ADMIN_ID, "El bot s'ha iniciat correctament.\n/estat_bot per veure l'estat del bot.")
     try:  
         bot.polling(timeout=120, skip_pending=True)  # polling amb timeout per evitar col·lisions entre usuaris
