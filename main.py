@@ -27,6 +27,7 @@ execute_db(create_controls_bandolers_DB)
 # MAIN
 if __name__ == "__main__":
     scheduler = ini_scheduler(bot, ADMIN_ID)
+    scheduler.remove_all_jobs()
     print("tasques en memòria:")
     scheduler.print_jobs()
     print()
