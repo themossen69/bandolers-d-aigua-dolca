@@ -22,7 +22,8 @@ def ini_scheduler(bot, ADMIN_ID):
             args=[bot, task_name, ADMIN_ID],
             id=f"task_{task_id}"
         )
-        print(f"⏰ {task_name} programada a les {run_date.hour:02d}:{run_date.minute:02d}")
+        date = run_date.strftime("%Y-%m-%d %H:%M:%S")
+        print(f"⏰ {date} - {task_name} programada a les {run_date.hour:02d}:{run_date.minute:02d}")
 
     scheduler.start()
     return scheduler
