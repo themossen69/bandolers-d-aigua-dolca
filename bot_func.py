@@ -277,7 +277,7 @@ def show_profile(message):
         msg += "Estat: " + user[f.key2index('estat')] + "\n"
         msg += "Punts: " + str(user[f.key2index('punts')]) + "\n"
         msg += "Kills: " + str(user[f.key2index('kills')]) + "\n"
-        msg += f"Nº de controls fets: {len(f.execute_db(f.get_user_controls, message.from_user.id))}\n"
+        # msg += f"Nº de controls fets: {len(f.execute_db(f.get_user_controls, message.from_user.id))}\n"
 
     f.blob_to_image(user[f.key2index('foto')], bot, message.chat.id, msg)  
 
@@ -938,51 +938,52 @@ def edit_profile3(message, field):
 @bot.message_handler(commands=['control'])
 @telegram_safe
 def start_control(message) -> None:
-    if not f.execute_db(f.id_in_db, message.from_user.id):
-        bot.send_message(message.chat.id, f.missatge_no_inscrits())
-        return
+    bot.send_message(message.chat.id, "Comanda en no disponible. Envia la teva foto a @SheriffDeDosrius.")
+    # if not f.execute_db(f.id_in_db, message.from_user.id):
+    #     bot.send_message(message.chat.id, f.missatge_no_inscrits())
+    #     return
 
-    if f.execute_db(f.get_inscripcio_disponible):
-        msg = "No pots passar el control perquè el joc encara no ha començat.\nPrem /comandes_disponibles per veure les comandes que pots utilitzar"
-        bot.send_message(message.chat.id, msg)
-        return
+    # if f.execute_db(f.get_inscripcio_disponible):
+    #     msg = "No pots passar el control perquè el joc encara no ha començat.\nPrem /comandes_disponibles per veure les comandes que pots utilitzar"
+    #     bot.send_message(message.chat.id, msg)
+    #     return
 
-    if f.execute_db(f.get_state, message.from_user.id) != 'jugant':
-        msg = "Comanda no disponible.\nPrem /comandes_disponibles per veure les que pots utilitzar"
-        bot.send_message(message.chat.id, msg)
-        return
+    # if f.execute_db(f.get_state, message.from_user.id) != 'jugant':
+    #     msg = "Comanda no disponible.\nPrem /comandes_disponibles per veure les que pots utilitzar"
+    #     bot.send_message(message.chat.id, msg)
+    #     return
     
-    data_dict = {}
+    # data_dict = {}
 
-    timezone = ZoneInfo("Europe/Madrid")
-    data_dict['timestamp'] = datetime.fromtimestamp(message.date, tz=timezone).strftime("%Y-%m-%d %H:%M:%S")
-    data_dict['id_user'] = message.from_user.id
-    data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
+    # timezone = ZoneInfo("Europe/Madrid")
+    # data_dict['timestamp'] = datetime.fromtimestamp(message.date, tz=timezone).strftime("%Y-%m-%d %H:%M:%S")
+    # data_dict['id_user'] = message.from_user.id
+    # data_dict['id_control'] = f.execute_db(f.get_control_id_given_date, data_dict['timestamp'])
 
-    if data_dict['id_control'] is None:
-        msg = "No hi ha cap control actiu en aquest moment.\n"
-        next_control = f.execute_db(f.get_next_control, data_dict['timestamp'])
-        if next_control:
-            msg += f.next_control_message(next_control["inici"], next_control["final"])
-            msg += "\nMés informació sobre els controls a /info_controls."
-        else:
-            msg += "No hi ha cap control més programat."
-        bot.send_message(message.chat.id, msg)
-        return
+    # if data_dict['id_control'] is None:
+    #     msg = "No hi ha cap control actiu en aquest moment.\n"
+    #     next_control = f.execute_db(f.get_next_control, data_dict['timestamp'])
+    #     if next_control:
+    #         msg += f.next_control_message(next_control["inici"], next_control["final"])
+    #         msg += "\nMés informació sobre els controls a /info_controls."
+    #     else:
+    #         msg += "No hi ha cap control més programat."
+    #     bot.send_message(message.chat.id, msg)
+    #     return
 
-    if f.execute_db(f.is_user_in_control, data_dict['id_control'], data_dict['id_user']):
-        msg = "Ja has passat el control assignat a aquesta data."
-        next_control = f.execute_db(f.get_next_control, data_dict['timestamp'])
-        if next_control:
-            msg += "\n" + f.next_control_message(next_control["inici"], next_control["final"])
-            msg += "\nMés informació sobre els controls a /info_controls."
-        bot.send_message(message.chat.id, msg)
-        return
+    # if f.execute_db(f.is_user_in_control, data_dict['id_control'], data_dict['id_user']):
+    #     msg = "Ja has passat el control assignat a aquesta data."
+    #     next_control = f.execute_db(f.get_next_control, data_dict['timestamp'])
+    #     if next_control:
+    #         msg += "\n" + f.next_control_message(next_control["inici"], next_control["final"])
+    #         msg += "\nMés informació sobre els controls a /info_controls."
+    #     bot.send_message(message.chat.id, msg)
+    #     return
 
-    else:
-        msg = "Adjunta la foto per poder validar el control."
-        bot.send_message(message.chat.id, msg)
-        bot.register_next_step_handler(message, lambda m: validate_control(m, data_dict))
+    # else:
+    #     msg = "Adjunta la foto per poder validar el control."
+    #     bot.send_message(message.chat.id, msg)
+    #     bot.register_next_step_handler(message, lambda m: validate_control(m, data_dict))
 
 @telegram_safe
 def validate_control(message, data_dict) -> None:
@@ -1074,6 +1075,47 @@ def set_winner_2_none(message) -> None:
         f.execute_db(f.set_winner, None)
         msg = "S'ha reiniciat el guanyador a 'None'."
         bot.send_message(ADMIN_ID, msg)
+
+@bot.message_handler(commands=['set_points'])
+@telegram_safe
+def set_points(message) -> None:
+    if f.is_admin(message):
+        # Markup amb tots els bandolers
+        markup = ReplyKeyboardMarkup(one_time_keyboard=True, input_field_placeholder="Prem un botó", resize_keyboard=True)
+        for user_id in f.execute_db(f.get_all_users):
+            markup.add(f"{f.execute_db(f.get_name, user_id)}-{user_id}")  # Mostrar nom i ID de l'usuari
+        markup.add('cancelar')  # Afegir opció per cancel·lar
+        msg = "Selecciona l'usuari al que vols sumar punts:\n"
+        message = bot.send_message(ADMIN_ID, msg, reply_markup=markup)
+        bot.register_next_step_handler(message, select_user_to_set_points)
+
+def select_user_to_set_points(message) -> None:
+    if f.is_admin(message):
+        # Extreure l'ID de l'usuari del text del missatge
+        if message.text == 'cancelar':
+            bot.send_message(ADMIN_ID, "Operació cancel·lada.")
+            return
+        
+        user_id = int(message.text.split('-')[-1])
+        if f.execute_db(f.id_in_db, user_id):
+            msg = "Introdueix el nombre de punts a sumar:\n"
+            bot.send_message(ADMIN_ID, msg)
+            bot.register_next_step_handler(message, lambda m: set_points_for_user(m, user_id))
+        else:
+            bot.send_message(ADMIN_ID, "Usuari no trobat. Operació cancel·lada.")
+
+def set_points_for_user(message, user_id) -> None:
+    if f.is_admin(message):
+        try:
+            points_to_add = int(message.text)
+            current_points = f.execute_db(f.get_points, user_id)
+            new_points = current_points + points_to_add
+            f.execute_db(f.update, 'punts', user_id, new_points)
+            msg = f"S'han actualitzat els punts de l'usuari {f.execute_db(f.get_name, user_id)} ({user_id}).\n"
+            msg += f"Punts anteriors: {current_points}, Punts nous: {new_points}."
+            bot.send_message(ADMIN_ID, msg)
+        except ValueError:
+            bot.send_message(ADMIN_ID, "El valor introduït no és un número vàlid. Operació cancel·lada.")
 
 
 @bot.message_handler(func=lambda message: True)

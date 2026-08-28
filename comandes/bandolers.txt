@@ -2,7 +2,6 @@ Comandes disponibles BANDOLER:
 /perfil : mostra les teves dades del joc.
 /victima : mostra el nom, descripció i imatge de la teva víctima.
 /enxampar : prem aquesta comanda si has atrapat a la teva víctima.
-/control : utilitza la comanda quan vulguis registrar un Control de Bandolers.
 /ranquing_bandolers : mostra els bandolers amb més punts.
 /cementiri : mostra els noms dels bandolers eliminats.
 /info_controls: mostra el calendari i les normes dels Controls de Bandolers.

@@ -345,6 +345,8 @@ def show_user(cursor: sqlite3.Cursor, id: int, bot, id_reciever) -> None:
         msg += "Estat: " + user[key2index('estat')] + "\n"
         msg += "Kills: " + str(user[key2index('kills')]) + "\n"
         msg += "Victima: " + str(user[key2index('victima')]) + "\n"
+        msg += "Punts: " + str(user[key2index('punts')]) + "\n"
+        msg += "Permís Instagram: " + ("Sí" if user[key2index('permis_instagram')] else "No") + "\n"
         blob_to_image(user[key2index('foto')], bot, id_reciever, msg)
     else:
         msg = f"Usuari no trobat (ID: {id})."

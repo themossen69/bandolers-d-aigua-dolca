@@ -5,6 +5,7 @@
     - És obligatori fer com a mínim un control al dia, sinó sereu eliminats i considerats fugitius.
     - Un control pot ser denegat si el bandoler o el lloc no són reconeixibles.
     - Si se us denega un control el podeu tornar a fer sempre i quan es segueixi complint l'horari d'aquest.
+    - Envia la foto del teu control a @SheriffDeDosrius
 
 <b>CALENDARI:</b>
 
