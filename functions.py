@@ -674,6 +674,7 @@ def send_message_to_target(target:str, text: str, bot) -> None:
             users = [execute_db(get_user_id_by_name, target)]
 
     for user_id in users:
+        print(f"enviant missatge a usuari {f.execute_db(get_name, user_id)} amb ID {user_id}")
         bot.send_message(user_id, text)
         time.sleep(0.05)  # Petita pausa per evitar problemes amb l'enviament massiu
 
@@ -696,12 +697,12 @@ def send_winning_message(bot, id_winners: list[int]) -> None:
     n_controls = len(execute_db(get_user_controls, id_winners[0]))
     if len(id_winners) == 1:
         msg_bandoler = "\n\nFELICITATS! Ets bandoler el bandoler guanyador!"
-        msg_bandoler += f"\nHas aconseguit {punts} punts fent {kills} kills i {n_controls} controls de bandolers."
+        msg_bandoler += f"\nHas aconseguit {punts} punts fent {kills} kills"
         msg_bandoler += "\nEl @SheriffDeDosrius es posarà amb contacte amb tu per coordinar la teva recompensa!"
         msg_bandoler += "\n\nGràcies per participar!"
 
         msg_participants = f"\n\nATENCIÓ: Tenim bandoler guanyador, felicitats {name_winners[0]}🤠!!!"
-        msg_participants += f"\nQue ha aconseguit {punts} punts fent {kills} kills i {n_controls} controls de bandolers."
+        msg_participants += f"\nQue ha aconseguit {punts} punts fent {kills} kills"
         msg_participants += "\nGràcies a tots per participar, esperem que us hagi agradat!"
 
     elif len(id_winners) > 1:
@@ -710,7 +711,7 @@ def send_winning_message(bot, id_winners: list[int]) -> None:
         msg_bandoler += "\n\nGràcies per participar!"
 
         msg_participants = f"\n\nATENCIÓ: Tenim els bandolers guanyadors, felicitats {', '.join(name_winners[:-1])} i {name_winners[-1]}!!!"
-        msg_participants += f"\nHan quedat empat fent {punts} punts amb {kills} kills i {n_controls} controls de bandolers."
+        msg_participants += f"\nHan quedat empat fent {punts} punts amb {kills} kills"
         msg_participants += "\nGràcies a tots per participar, esperem que us hagi agradat!"
 
     # Enviar la foto de l'últim bandoler + missatge a tots els participants
