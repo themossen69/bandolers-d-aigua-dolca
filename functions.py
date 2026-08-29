@@ -674,7 +674,7 @@ def send_message_to_target(target:str, text: str, bot) -> None:
             users = [execute_db(get_user_id_by_name, target)]
 
     for user_id in users:
-        print(f"enviant missatge a usuari {f.execute_db(get_name, user_id)} amb ID {user_id}")
+        print(f"enviant missatge a usuari {execute_db(get_name, user_id)} amb ID {user_id}")
         bot.send_message(user_id, text)
         time.sleep(0.05)  # Petita pausa per evitar problemes amb l'enviament massiu
 
