@@ -674,9 +674,11 @@ def send_message_to_target(target:str, text: str, bot) -> None:
             users = [execute_db(get_user_id_by_name, target)]
 
     for user_id in users:
-        print(f"enviant missatge a usuari {execute_db(get_name, user_id)} amb ID {user_id}")
-        bot.send_message(user_id, text)
-        time.sleep(0.05)  # Petita pausa per evitar problemes amb l'enviament massiu
+        try:
+            bot.send_message(user_id, text)
+            time.sleep(0.05)  # Petita pausa per evitar problemes amb l'enviament massiu
+        except Exception as e:
+            print(f"Error enviant missatge a {user_id}: {e}")
 
     msg = f"Missatge enviat a {target}."
     bot.send_message(ADMIN_ID, msg)
@@ -718,7 +720,10 @@ def send_winning_message(bot, id_winners: list[int]) -> None:
     picture_winners = [execute_db(get_picture, id_winner) for id_winner in id_winners]
     for user_id in execute_db(get_all_users)+[ADMIN_ID]:
         for picture_winner in picture_winners:
-            blob_to_image(picture_winner, bot, user_id, '')
+            try:
+                blob_to_image(picture_winner, bot, user_id, '')
+            except Exception as e:
+                print(f"Error enviant imatge a {user_id}: {e}")
         bot.send_message(user_id, msg_participants)
         msg = "Si teniu algun comentari o suggeriment sobre el joc, no dubteu a enviar un missatge al @SheriffDeDosrius. \nEns encantaria escoltar la vostra opinió!"
         bot.send_message(user_id, msg)
